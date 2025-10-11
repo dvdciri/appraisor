@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter, useParams } from 'next/navigation'
+import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import PropertyDetails from '../../components/PropertyDetails'
 import Header from '../../components/Header'
 
@@ -37,6 +37,7 @@ interface PropertyData {
 export default function PropertyDetailsPage() {
   const router = useRouter()
   const params = useParams()
+  const searchParams = useSearchParams()
   const [propertyData, setPropertyData] = useState<PropertyData | null>(null)
   const [loading, setLoading] = useState(true)
   const [comparables, setComparables] = useState<Set<string>>(new Set())
@@ -47,6 +48,19 @@ export default function PropertyDetailsPage() {
     minBaths: '',
     maxBaths: ''
   })
+
+  // Smart back navigation based on referrer
+  const handleBackClick = () => {
+    const referrer = searchParams.get('ref')
+    
+    if (referrer === 'recent') {
+      router.push('/recent')
+    } else if (referrer === 'lists') {
+      router.push('/lists')
+    } else {
+      router.back()
+    }
+  }
 
   // Load property data from localStorage based on ID - NO API CALLS
   useEffect(() => {
@@ -171,8 +185,8 @@ export default function PropertyDetailsPage() {
       <main className="min-h-screen bg-gray-900">
         <Header 
           showBackButton={true}
-          onBackClick={() => router.push('/')}
-          backButtonText="Back to Search"
+          onBackClick={handleBackClick}
+          backButtonText="Back"
         />
         <div className="container mx-auto px-4 py-8">
           <div className="max-w-4xl mx-auto">
@@ -190,8 +204,8 @@ export default function PropertyDetailsPage() {
       <main className="min-h-screen bg-gray-900">
         <Header 
           showBackButton={true}
-          onBackClick={() => router.push('/')}
-          backButtonText="Back to Search"
+          onBackClick={handleBackClick}
+          backButtonText="Back"
         />
         <div className="container mx-auto px-4 py-8">
           <div className="max-w-4xl mx-auto">
@@ -208,8 +222,8 @@ export default function PropertyDetailsPage() {
     <main className="min-h-screen bg-gray-900">
       <Header 
         showBackButton={true}
-        onBackClick={() => router.push('/')}
-        backButtonText="Back to Search"
+        onBackClick={handleBackClick}
+        backButtonText="Back"
       />
       <div className="p-6">
         <div className="max-w-7xl mx-auto space-y-8">

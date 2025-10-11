@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Header from '../components/Header'
+import Toast from '../components/Toast'
+import ConfirmDialog from '../components/ConfirmDialog'
 
 interface StorageItem {
   key: string
@@ -16,6 +18,9 @@ export default function StorageDebugPage() {
   const [storageItems, setStorageItems] = useState<StorageItem[]>([])
   const [totalSize, setTotalSize] = useState(0)
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
+  const [toastMessage, setToastMessage] = useState<{type: 'success' | 'info' | 'error', text: string} | null>(null)
+  const [clearAllConfirm, setClearAllConfirm] = useState(false)
+  const [deleteKeyConfirm, setDeleteKeyConfirm] = useState<string | null>(null)
 
   useEffect(() => {
     loadStorageData()
@@ -75,19 +80,34 @@ export default function StorageDebugPage() {
   }
 
   const clearStorage = () => {
-    if (confirm('Are you sure you want to clear ALL localStorage data? This cannot be undone!')) {
-      localStorage.clear()
-      loadStorageData()
-      alert('Storage cleared!')
-    }
+    setClearAllConfirm(true)
+  }
+
+  const confirmClearAll = () => {
+    localStorage.clear()
+    loadStorageData()
+    setClearAllConfirm(false)
+    setToastMessage({
+      type: 'success',
+      text: 'Storage cleared successfully'
+    })
   }
 
   const deleteKey = (key: string) => {
-    if (confirm(`Delete "${key}"?`)) {
-      localStorage.removeItem(key)
-      loadStorageData()
-      setSelectedKey(null)
-    }
+    setDeleteKeyConfirm(key)
+  }
+
+  const confirmDeleteKey = () => {
+    if (!deleteKeyConfirm) return
+    
+    localStorage.removeItem(deleteKeyConfirm)
+    loadStorageData()
+    setSelectedKey(null)
+    setToastMessage({
+      type: 'success',
+      text: `Deleted "${deleteKeyConfirm}"`
+    })
+    setDeleteKeyConfirm(null)
   }
 
   const exportStorage = () => {
@@ -115,12 +135,48 @@ export default function StorageDebugPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900">
-      <Header 
-        showBackButton={true}
-        onBackClick={() => router.push('/')}
-        backButtonText="Back to Home"
-      />
+    <>
+      {/* Toast Notification */}
+      {toastMessage && (
+        <Toast
+          message={toastMessage.text}
+          type={toastMessage.type}
+          onClose={() => setToastMessage(null)}
+        />
+      )}
+
+      {/* Clear All Confirmation Dialog */}
+      {clearAllConfirm && (
+        <ConfirmDialog
+          title="Clear All Storage"
+          message="Are you sure you want to clear ALL localStorage data?\n\nThis will delete all property data, lists, and settings. This cannot be undone!"
+          confirmLabel="Clear All"
+          cancelLabel="Cancel"
+          confirmVariant="danger"
+          onConfirm={confirmClearAll}
+          onCancel={() => setClearAllConfirm(false)}
+        />
+      )}
+
+      {/* Delete Key Confirmation Dialog */}
+      {deleteKeyConfirm && (
+        <ConfirmDialog
+          title="Delete Key"
+          message={`Are you sure you want to delete the key "${deleteKeyConfirm}"?\n\nThis cannot be undone.`}
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
+          confirmVariant="danger"
+          onConfirm={confirmDeleteKey}
+          onCancel={() => setDeleteKeyConfirm(null)}
+        />
+      )}
+
+      <div className="min-h-screen bg-gray-900">
+        <Header 
+          showBackButton={true}
+          onBackClick={() => router.push('/')}
+          backButtonText="Back to Home"
+        />
 
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-7xl mx-auto">
@@ -249,7 +305,8 @@ export default function StorageDebugPage() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   )
 }
 

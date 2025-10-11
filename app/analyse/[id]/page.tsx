@@ -1,73 +1,9 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
-import { useRouter, useParams } from 'next/navigation'
-import PropertyDetails from '../../components/PropertyDetails'
+import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import Header from '../../components/Header'
 import { saveCalculatorData, loadCalculatorData, type CalculatorData } from '../../../lib/persistence'
-
-// Simplified PropertyDetails for investment view - only overview and financials
-function SimplifiedPropertyDetails({ data }: { data: any }) {
-  const { attributes } = data.data
-  const address = `${attributes.address.street_group_format.address_lines}, ${attributes.address.street_group_format.postcode}`
-  
-  // Get estimated values from data
-  const estimatedValue = attributes.estimated_values?.[0]?.estimated_market_value_rounded || 0
-  const estimatedRent = attributes.estimated_rental_value?.estimated_monthly_rental_value || 0
-  const estimatedYield = attributes.estimated_rental_value?.estimated_annual_rental_yield || 0
-
-  return (
-    <div className="bg-gradient-to-r from-blue-900 to-purple-900 rounded-lg p-6 animate-enter-subtle">
-      <h2 className="text-2xl font-bold text-white mb-6">🏠 Property Details</h2>
-      
-      {/* Address */}
-      <div className="bg-black/30 rounded-md p-4 mb-6">
-        <h3 className="text-sm font-medium text-gray-300 mb-2">Address</h3>
-        <p className="text-lg font-semibold text-white break-words">{address}</p>
-      </div>
-      
-      {/* Property details and financials in one grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-        {/* Type */}
-        <div className="bg-black/30 rounded-md p-4">
-          <h3 className="text-xs font-medium text-gray-300 mb-2">Type</h3>
-          <p className="text-sm font-semibold text-white" title={attributes.property_type?.value || 'N/A'}>{attributes.property_type?.value || 'N/A'}</p>
-        </div>
-        {/* Beds & Baths */}
-        <div className="bg-black/30 rounded-md p-4">
-          <h3 className="text-xs font-medium text-gray-300 mb-2">Beds & Baths</h3>
-          <p className="text-sm font-bold text-white">{attributes.number_of_bedrooms?.value || 'N/A'} bed • {attributes.number_of_bathrooms?.value || 'N/A'} bath</p>
-        </div>
-        {/* Size */}
-        <div className="bg-black/30 rounded-md p-4">
-          <h3 className="text-xs font-medium text-gray-300 mb-2">Size</h3>
-          <p className="text-sm font-bold text-white">{attributes.internal_area_square_metres || 'N/A'} m²</p>
-        </div>
-        {/* Estimated Value */}
-        <div className="bg-black/30 rounded-md p-4">
-          <h3 className="text-xs font-medium text-gray-300 mb-2">Value</h3>
-          <p className="text-sm font-bold text-green-400" title={`£${estimatedValue.toLocaleString()}`}>
-            £{estimatedValue.toLocaleString()}
-          </p>
-        </div>
-        {/* Estimated Rent */}
-        <div className="bg-black/30 rounded-md p-4">
-          <h3 className="text-xs font-medium text-gray-300 mb-2">Rent PCM</h3>
-          <p className="text-sm font-bold text-blue-400" title={`£${estimatedRent}`}>
-            £{estimatedRent}
-          </p>
-        </div>
-        {/* Estimated Yield */}
-        <div className="bg-black/30 rounded-md p-4">
-          <h3 className="text-xs font-medium text-gray-300 mb-2">Yield</h3>
-          <p className="text-sm font-bold text-purple-400" title={`${(estimatedYield * 100).toFixed(1)}%`}>
-            {(estimatedYield * 100).toFixed(1)}%
-          </p>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 // Calculator Components
 function CalculatorSection({ title, children, className = "", icon }: { 
@@ -2050,6 +1986,7 @@ interface PropertyData {
 export default function InvestPage() {
   const router = useRouter()
   const params = useParams()
+  const searchParams = useSearchParams()
   const [propertyData, setPropertyData] = useState<PropertyData | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
 
@@ -2120,7 +2057,11 @@ export default function InvestPage() {
     <div className="min-h-screen w-full bg-gray-950">
       <Header 
         showBackButton={true}
-        onBackClick={() => router.push(`/details/${params.id}`)}
+        onBackClick={() => {
+          const ref = searchParams.get('ref')
+          const url = ref ? `/details/${params.id}?ref=${ref}` : `/details/${params.id}`
+          router.push(url)
+        }}
         backButtonText="Back to Property Details"
       />
 
@@ -2131,19 +2072,6 @@ export default function InvestPage() {
           <div className="text-center animate-enter-subtle-delayed">
             <h2 className="text-3xl font-bold text-white mb-8">Investment Calculator</h2>
           </div>
-
-          {/* Property Details */}
-          {loading && (
-            <div className="text-sm text-gray-400 animate-enter-subtle-delayed-3">Loading property details…</div>
-          )}
-          {!loading && propertyData && (
-            <div className="animate-enter-subtle-delayed-3">
-              <SimplifiedPropertyDetails data={propertyData as any} />
-            </div>
-          )}
-          {!loading && !propertyData && (
-            <div className="text-sm text-gray-400 animate-enter-subtle-delayed-3">No property loaded.</div>
-          )}
 
           {/* Investment Calculator - only show when property data is loaded */}
           {!loading && (

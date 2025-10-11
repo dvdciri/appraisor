@@ -1,7 +1,15 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { 
+  getAllPropertyLists, 
+  createPropertyList, 
+  addPropertyToList,
+  removePropertyFromList,
+  PropertyList 
+} from '../../lib/persistence'
+import Toast from './Toast'
 
 interface PropertyData {
   data: {
@@ -330,6 +338,7 @@ export default function PropertyDetails({
   onFiltersChange
 }: PropertyDetailsProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { attributes } = data.data
   const address = `${attributes.address.street_group_format.address_lines}, ${attributes.address.street_group_format.postcode}`
   
@@ -364,9 +373,30 @@ export default function PropertyDetails({
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [isGalleryOpen, setIsGalleryOpen] = useState(false)
 
+  // List modal state
+  const [isListModalOpen, setIsListModalOpen] = useState(false)
+  const [allLists, setAllLists] = useState<PropertyList[]>([])
+  const [newListName, setNewListName] = useState('')
+  const [isCreatingList, setIsCreatingList] = useState(false)
+  const [selectedListId, setSelectedListId] = useState<string | null>(null)
+  const [listMessage, setListMessage] = useState<{type: 'success' | 'info' | 'error', text: string} | null>(null)
+
   // Tabs state
   const tabs = ['📋 Property Details', '⚡ EPC', '⚠️ Risk assesment', '🏘️ Sold Nearby', '🏠 Listed Nearby', '📈 Market', '🚌 Transport & Education']
   const [selectedTab, setSelectedTab] = useState<string>('📋 Property Details')
+
+  // Load lists when modal opens
+  useEffect(() => {
+    if (isListModalOpen) {
+      setAllLists(getAllPropertyLists())
+      setListMessage(null)
+    }
+  }, [isListModalOpen])
+
+  // Check if property is in a list
+  const isPropertyInList = (list: PropertyList): boolean => {
+    return propertyId ? list.propertyIds.includes(propertyId) : false
+  }
 
 
   const openImageGallery = (images: string[], startIndex: number = 0) => {
@@ -379,6 +409,86 @@ export default function PropertyDetails({
     setIsGalleryOpen(false)
     setSelectedImages([])
     setCurrentImageIndex(0)
+  }
+
+  const handleCreateNewList = () => {
+    if (!newListName.trim()) return
+    
+    try {
+      const newList = createPropertyList(newListName.trim())
+      setAllLists(getAllPropertyLists())
+      setNewListName('')
+      setIsCreatingList(false)
+      
+      // Automatically select the newly created list
+      setSelectedListId(newList.id)
+    } catch (error) {
+      console.error('Failed to create list:', error)
+    }
+  }
+
+  const handleTogglePropertyInList = (listId: string) => {
+    if (!propertyId) return
+    
+    const list = allLists.find(l => l.id === listId)
+    if (!list) return
+    
+    const isInList = isPropertyInList(list)
+    
+    try {
+      if (isInList) {
+        // Remove from list
+        const success = removePropertyFromList(listId, propertyId)
+        if (success) {
+          setListMessage({
+            type: 'success',
+            text: `Property removed from "${list.name}"`
+          })
+          // Reload lists to update UI
+          setAllLists(getAllPropertyLists())
+        } else {
+          setListMessage({
+            type: 'error',
+            text: `Failed to remove property from "${list.name}"`
+          })
+        }
+      } else {
+        // Add to list
+        const success = addPropertyToList(listId, propertyId)
+        if (success) {
+          setListMessage({
+            type: 'success',
+            text: `Property added to "${list.name}"`
+          })
+          // Reload lists to update UI
+          setAllLists(getAllPropertyLists())
+        } else {
+          setListMessage({
+            type: 'info',
+            text: `Property is already in "${list.name}"`
+          })
+        }
+      }
+      
+      // Clear message after 3 seconds
+      setTimeout(() => {
+        setListMessage(null)
+      }, 3000)
+    } catch (error) {
+      console.error('Failed to update property in list:', error)
+      setListMessage({
+        type: 'error',
+        text: 'Failed to update list'
+      })
+    }
+  }
+
+  const closeListModal = () => {
+    setIsListModalOpen(false)
+    setIsCreatingList(false)
+    setNewListName('')
+    setSelectedListId(null)
+    setListMessage(null)
   }
 
   const toggleComparable = (transactionId: string) => {
@@ -478,7 +588,50 @@ export default function PropertyDetails({
   }
 
   return (
+    <>
+      {/* Toast Notification */}
+      {listMessage && (
+        <Toast
+          message={listMessage.text}
+          type={listMessage.type}
+          onClose={() => setListMessage(null)}
+        />
+      )}
+
     <div className="space-y-8">
+
+      {/* Action Buttons */}
+      <div className="flex flex-wrap items-center gap-3">
+        {showInvestButton && (
+          <button
+            type="button"
+            onClick={() => {
+              const ref = searchParams.get('ref')
+              const url = ref ? `/analyse/${propertyId || 'default'}?ref=${ref}` : `/analyse/${propertyId || 'default'}`
+              router.push(url)
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium border border-blue-500 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <path d="M9 9h6v6H9z"/>
+            </svg>
+            <span className="hidden sm:inline">Analyse Investment</span>
+            <span className="sm:hidden">Analyse</span>
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => setIsListModalOpen(true)}
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-white font-medium border border-gray-600 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          <span className="hidden sm:inline">Add to List</span>
+          <span className="sm:hidden">Add</span>
+        </button>
+      </div>
 
       {/* Overview - Main Property Info */}
       <div className="bg-gradient-to-r from-blue-900 to-purple-900 rounded-lg p-6 animate-enter-subtle">
@@ -530,31 +683,7 @@ export default function PropertyDetails({
 
       {/* Financials */}
       <div className="bg-gradient-to-r from-green-900 to-blue-900 rounded-lg p-8 animate-enter-subtle-delayed">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-white">💰 Financials</h2>
-          {showInvestButton && (
-            <button
-              type="button"
-              onClick={() => router.push(`/analyse/${propertyId || 'default'}`)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-white/10 hover:bg-white/20 text-white font-medium border border-white/20 backdrop-blur-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-white/30 focus:ring-offset-0"
-            >
-              {/* Calculator/analytics icon */}
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                <path d="M9 9h6v6H9z"/>
-                <path d="M9 1v3"/>
-                <path d="M15 1v3"/>
-                <path d="M9 20v3"/>
-                <path d="M15 20v3"/>
-                <path d="M20 9h3"/>
-                <path d="M20 14h3"/>
-                <path d="M1 9h3"/>
-                <path d="M1 14h3"/>
-              </svg>
-              Analyse Investment
-            </button>
-          )}
-        </div>
+        <h2 className="text-2xl font-bold text-white mb-6">💰 Financials</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-black bg-opacity-30 rounded-lg p-6">
             <h3 className="text-sm font-medium text-gray-300 mb-2">Estimated Value</h3>
@@ -1942,6 +2071,128 @@ export default function PropertyDetails({
         </div>
       )}
 
+      {/* List Selection Modal */}
+      {isListModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4">
+          <div className="bg-gray-800 rounded-lg max-w-md w-full max-h-[80vh] overflow-y-auto border border-gray-600">
+            {/* Header */}
+            <div className="sticky top-0 bg-gray-800 border-b border-gray-600 p-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-white">Add to List</h3>
+                <button
+                  onClick={closeListModal}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-4">
+              {/* Create New List Section */}
+              {!isCreatingList ? (
+                <button
+                  onClick={() => setIsCreatingList(true)}
+                  className="w-full flex items-center gap-3 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Create New List
+                </button>
+              ) : (
+                <div className="bg-gray-700 rounded-lg p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-white font-medium">New List</h4>
+                    <button
+                      onClick={() => {
+                        setIsCreatingList(false)
+                        setNewListName('')
+                      }}
+                      className="text-gray-400 hover:text-white"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    value={newListName}
+                    onChange={(e) => setNewListName(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        handleCreateNewList()
+                      }
+                    }}
+                    placeholder="Enter list name..."
+                    className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    autoFocus
+                  />
+                  <button
+                    onClick={handleCreateNewList}
+                    disabled={!newListName.trim()}
+                    className="w-full px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-md transition-colors font-medium"
+                  >
+                    Create
+                  </button>
+                </div>
+              )}
+
+              {/* Existing Lists */}
+              {allLists.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium text-gray-400 uppercase">Existing Lists</h4>
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {allLists.map((list) => {
+                      const isInList = isPropertyInList(list)
+                      return (
+                        <button
+                          key={list.id}
+                          onClick={() => handleTogglePropertyInList(list.id)}
+                          className={`w-full text-left px-4 py-3 rounded-lg transition-colors border-2 ${
+                            isInList
+                              ? 'bg-green-900 border-green-600 text-white hover:bg-green-800'
+                              : 'bg-gray-700 border-gray-600 hover:bg-gray-600 text-white'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <p className="font-medium">{list.name}</p>
+                              <p className={`text-sm mt-1 ${isInList ? 'text-green-300' : 'text-gray-400'}`}>
+                                {list.propertyIds.length} {list.propertyIds.length === 1 ? 'property' : 'properties'}
+                              </p>
+                            </div>
+                            {isInList ? (
+                              <svg className="w-6 h-6 text-green-400" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                              </svg>
+                            ) : (
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                              </svg>
+                            )}
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {allLists.length === 0 && !isCreatingList && (
+                <div className="text-center py-8">
+                  <p className="text-gray-400 mb-4">No lists yet. Create your first list to get started!</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Image Gallery Modal */}
       {isGalleryOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4">
@@ -2022,6 +2273,7 @@ export default function PropertyDetails({
         </div>
       )}
     </div>
+    </>
   )
 }
 

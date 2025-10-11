@@ -1,40 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Header from './components/Header'
-import StreetViewImage from './components/StreetViewImage'
 import { saveCalculatorData, type CalculatorData } from '../lib/persistence'
-
-interface PropertyData {
-  data: {
-    attributes: {
-      address: {
-        street_group_format: {
-          address_lines: string
-          postcode: string
-        }
-      }
-      tenure: {
-        tenure_type: string
-      }
-      number_of_bedrooms: {
-        value: number
-      }
-      number_of_bathrooms: {
-        value: number
-      }
-      internal_area_square_metres: number
-      energy_performance: {
-        energy_efficiency: {
-          current_rating: string
-        }
-      }
-      [key: string]: any
-    }
-  }
-}
 
 interface RecentAnalysis {
   id: string
@@ -54,117 +23,13 @@ const generateUID = () => {
   return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
 }
 
-// Component to display a single property in the recent list
-function RecentPropertyItem({ analysis, index, onClick }: { analysis: RecentAnalysis, index: number, onClick: () => void }) {
-  const [propertyData, setPropertyData] = useState<PropertyData | null>(null)
-
-  useEffect(() => {
-    // Load property data from store
-    try {
-      const propertyDataStore = JSON.parse(localStorage.getItem('propertyDataStore') || '{}')
-      const data = propertyDataStore[analysis.id]
-      if (data) {
-        setPropertyData(data)
-      }
-    } catch (e) {
-      console.error('Failed to load property data for list item:', e)
-    }
-  }, [analysis.id])
-
-  if (!propertyData) {
-    return (
-      <div className="bg-gray-700 rounded-lg p-4 animate-pulse">
-        <div className="h-16 bg-gray-600 rounded"></div>
-      </div>
-    )
-  }
-
-  const attributes = propertyData.data.attributes
-  const address = attributes.address.street_group_format.address_lines
-  const postcode = attributes.address.street_group_format.postcode
-  const propertyType = attributes.property_type?.value || 'Unknown'
-  const bedrooms = attributes.number_of_bedrooms?.value || 0
-  const bathrooms = attributes.number_of_bathrooms?.value || 0
-  const estimatedValue = attributes.estimated_values?.[0]?.estimated_market_value_rounded || 0
-  const latitude = attributes.location?.coordinates?.latitude || 0
-  const longitude = attributes.location?.coordinates?.longitude || 0
-
-  return (
-    <div
-      onClick={onClick}
-      className={`bg-gray-700 hover:bg-gray-600 rounded-lg p-4 cursor-pointer transition-colors border border-gray-600 hover:border-gray-500 ${
-        index === 0 ? 'animate-enter-subtle-delayed-2' : 
-        index === 1 ? 'animate-enter-subtle-delayed-3' : 
-        'animate-enter-subtle-delayed-3'
-      }`}
-      style={{ animationDelay: `${0.4 + index * 0.1}s` }}
-    >
-      <div className="flex items-center gap-4">
-        {/* Street View Image */}
-        <div className="flex-shrink-0">
-          <StreetViewImage
-            latitude={latitude}
-            longitude={longitude}
-            address={address}
-            className="w-20 h-16"
-          />
-        </div>
-        
-        {/* Property Details */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-3 mb-1">
-            <h3 className="text-white font-semibold text-sm truncate" title={address}>
-              {address}
-            </h3>
-            <span className="text-gray-400 text-xs whitespace-nowrap">
-              {postcode}
-            </span>
-          </div>
-          <div className="flex items-center gap-4 text-xs text-gray-400">
-            <span>{propertyType}</span>
-            <span>{bedrooms} bed{bedrooms !== 1 ? 's' : ''}</span>
-            <span>{bathrooms} bath{bathrooms !== 1 ? 's' : ''}</span>
-            <span className="text-green-400 font-medium">£{estimatedValue.toLocaleString()}</span>
-          </div>
-        </div>
-        
-        {/* Date */}
-        <div className="flex items-center gap-3 ml-4 flex-shrink-0">
-          <span className="text-xs text-gray-400">
-            {new Date(analysis.searchDate).toLocaleDateString()}
-          </span>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 export default function Home() {
   const router = useRouter()
   const [address, setAddress] = useState('')
   const [postcode, setPostcode] = useState('')
   const [loading, setLoading] = useState(false)
-  const [recentAnalyses, setRecentAnalyses] = useState<RecentAnalysis[]>([])
 
-  // Load recent analyses on mount
-  useEffect(() => {
-    try {
-      const savedAnalyses = typeof window !== 'undefined' ? localStorage.getItem('recentAnalyses') : null
-      if (savedAnalyses) {
-        const analyses = JSON.parse(savedAnalyses)
-        setRecentAnalyses(analyses)
-      }
-    } catch (e) {
-      console.error('Failed to restore recent analyses', e)
-    }
-  }, [])
-
-  const handleReset = () => {
-    setAddress('')
-    setPostcode('')
-  }
-
-  const saveToRecentAnalyses = (data: PropertyData, searchAddress: string, searchPostcode: string) => {
+  const saveToRecentAnalyses = (data: any, searchAddress: string, searchPostcode: string) => {
     const analysisId = generateUID()
     console.log('Creating new analysis with UID:', analysisId)
     
@@ -278,39 +143,18 @@ export default function Home() {
       }
     }
 
-    setRecentAnalyses(prev => {
-      // Remove any existing analysis for the same property (by checking if data exists in propertyDataStore)
-      // We can't check by address/postcode anymore since we don't store them
-      // Just add to the beginning and limit to 10 most recent
-      const updated = [analysis, ...prev].slice(0, 10)
-      
-      try {
-        localStorage.setItem('recentAnalyses', JSON.stringify(updated))
-        console.log('Saved lightweight analysis list to localStorage')
-      } catch (e) {
-        console.error('Failed to save recent analyses:', e)
-      }
-      
-      return updated
-    })
+    try {
+      const savedAnalyses = localStorage.getItem('recentAnalyses')
+      const analyses = savedAnalyses ? JSON.parse(savedAnalyses) : []
+      // Add to the beginning and limit to 10 most recent
+      const updated = [analysis, ...analyses].slice(0, 10)
+      localStorage.setItem('recentAnalyses', JSON.stringify(updated))
+      console.log('Saved lightweight analysis list to localStorage')
+    } catch (e) {
+      console.error('Failed to save recent analyses:', e)
+    }
     
     return analysisId
-  }
-
-  const loadRecentAnalysis = (analysis: RecentAnalysis) => {
-    console.log('Loading analysis:', analysis.id, 'with comparables:', analysis.comparables)
-    
-    // Navigate to the details page instead of loading on the same page
-    router.push(`/details/${analysis.id}`)
-  }
-
-  const clearRecentAnalyses = () => {
-    setRecentAnalyses([])
-    try {
-      localStorage.removeItem('recentAnalyses')
-    } catch (e) {
-      console.error('Failed to clear recent analyses', e)
-    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -408,31 +252,68 @@ export default function Home() {
                 </form>
               </div>
 
-              {/* Recent Analyses Section */}
-              {recentAnalyses.length > 0 && (
-                <div className="bg-gray-800 rounded-lg p-6 animate-enter-subtle-delayed">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-bold text-white">Recent Properties ({recentAnalyses.length})</h2>
-                    <button
-                      onClick={clearRecentAnalyses}
-                      className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded-md transition-colors"
-                    >
-                      Clear All
-                    </button>
+              {/* Action Menu Grid */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 animate-enter-subtle-delayed">
+                {/* Recent Searches */}
+                <button
+                  type="button"
+                  onClick={() => router.push('/recent')}
+                  className="bg-gray-800 hover:bg-gray-700 rounded-lg p-6 transition-colors border-2 border-gray-700 hover:border-blue-600 group"
+                >
+                  <div className="flex flex-col items-center text-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-blue-600 group-hover:bg-blue-500 flex items-center justify-center transition-colors">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-white font-semibold">Recent Searches</h3>
+                      <p className="text-gray-400 text-sm mt-1">View search history</p>
+                    </div>
                   </div>
-                  
-                  <div className="space-y-2">
-                    {recentAnalyses.map((analysis, index) => (
-                      <RecentPropertyItem
-                        key={analysis.id}
-                        analysis={analysis}
-                        index={index}
-                        onClick={() => loadRecentAnalysis(analysis)}
-                      />
-                    ))}
+                </button>
+
+                {/* Manage Lists */}
+                <button
+                  type="button"
+                  onClick={() => router.push('/lists')}
+                  className="bg-gray-800 hover:bg-gray-700 rounded-lg p-6 transition-colors border-2 border-gray-700 hover:border-green-600 group"
+                >
+                  <div className="flex flex-col items-center text-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-green-600 group-hover:bg-green-500 flex items-center justify-center transition-colors">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-white font-semibold">Manage Lists</h3>
+                      <p className="text-gray-400 text-sm mt-1">Organize properties</p>
+                    </div>
                   </div>
-                </div>
-              )}
+                </button>
+
+                {/* Tasks */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    // TODO: Implement Tasks action
+                    console.log('Tasks clicked')
+                  }}
+                  className="bg-gray-800 hover:bg-gray-700 rounded-lg p-6 transition-colors border-2 border-gray-700 hover:border-red-600 group"
+                >
+                  <div className="flex flex-col items-center text-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-red-600 group-hover:bg-red-500 flex items-center justify-center transition-colors">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-white font-semibold">Tasks</h3>
+                      <p className="text-gray-400 text-sm mt-1">Powered by Todoist</p>
+                    </div>
+                  </div>
+                </button>
+              </div>
             </div>
         </div>
       </div>

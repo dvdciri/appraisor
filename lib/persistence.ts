@@ -1,7 +1,8 @@
 // Persistence utilities for localStorage
 const STORAGE_KEYS = {
   PROPERTY_DATA: 'estimo_property_data',
-  CALCULATOR_DATA: 'estimo_calculator_data'
+  CALCULATOR_DATA: 'estimo_calculator_data',
+  PROPERTY_LISTS: 'estimo_property_lists'
 } as const
 
 export interface PersistedPropertyData {
@@ -75,6 +76,19 @@ export interface PersistedCalculatorData {
   }
 }
 
+export interface PropertyList {
+  id: string
+  name: string
+  propertyIds: string[]
+  createdAt: number
+  updatedAt: number
+  order?: number
+}
+
+export interface PropertyLists {
+  [listId: string]: PropertyList
+}
+
 // Generic storage functions
 export function saveToStorage<T>(key: string, data: T): void {
   if (typeof window === 'undefined') return
@@ -143,4 +157,83 @@ export function clearAllPersistedData(): void {
   Object.values(STORAGE_KEYS).forEach(key => {
     localStorage.removeItem(key)
   })
+}
+
+// Property lists persistence
+export function loadPropertyLists(): PropertyLists {
+  return loadFromStorage<PropertyLists>(STORAGE_KEYS.PROPERTY_LISTS, {})
+}
+
+export function savePropertyLists(lists: PropertyLists): void {
+  saveToStorage(STORAGE_KEYS.PROPERTY_LISTS, lists)
+}
+
+export function createPropertyList(name: string): PropertyList {
+  const lists = loadPropertyLists()
+  const id = `list_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+  
+  const newList: PropertyList = {
+    id,
+    name,
+    propertyIds: [],
+    createdAt: Date.now(),
+    updatedAt: Date.now()
+  }
+  
+  lists[id] = newList
+  savePropertyLists(lists)
+  
+  return newList
+}
+
+export function addPropertyToList(listId: string, propertyId: string): boolean {
+  const lists = loadPropertyLists()
+  const list = lists[listId]
+  
+  if (!list) return false
+  
+  // Don't add if already in list
+  if (list.propertyIds.includes(propertyId)) return false
+  
+  list.propertyIds.push(propertyId)
+  list.updatedAt = Date.now()
+  
+  savePropertyLists(lists)
+  return true
+}
+
+export function removePropertyFromList(listId: string, propertyId: string): boolean {
+  const lists = loadPropertyLists()
+  const list = lists[listId]
+  
+  if (!list) return false
+  
+  const index = list.propertyIds.indexOf(propertyId)
+  if (index === -1) return false
+  
+  list.propertyIds.splice(index, 1)
+  list.updatedAt = Date.now()
+  
+  savePropertyLists(lists)
+  return true
+}
+
+export function deletePropertyList(listId: string): boolean {
+  const lists = loadPropertyLists()
+  
+  if (!lists[listId]) return false
+  
+  delete lists[listId]
+  savePropertyLists(lists)
+  return true
+}
+
+export function getPropertyList(listId: string): PropertyList | null {
+  const lists = loadPropertyLists()
+  return lists[listId] || null
+}
+
+export function getAllPropertyLists(): PropertyList[] {
+  const lists = loadPropertyLists()
+  return Object.values(lists).sort((a, b) => b.updatedAt - a.updatedAt)
 }
