@@ -1,9 +1,74 @@
 // Persistence utilities for localStorage
 const STORAGE_KEYS = {
-  PROPERTY_DATA: 'estimo_property_data',
+  PROPERTY_DATA: 'estimo_property_data', // DEPRECATED - kept for migration
   CALCULATOR_DATA: 'estimo_calculator_data',
-  PROPERTY_LISTS: 'estimo_property_lists'
+  PROPERTY_LISTS: 'estimo_property_lists',
+  // New storage keys
+  PROPERTIES: 'estimo_properties', // Generic property data (keyed by UPRN)
+  USER_ANALYSES: 'estimo_user_analyses', // User-specific analyses (keyed by analysisId)
+  RECENT_ANALYSES: 'estimo_recent_analyses' // List of recent analysis IDs
 } as const
+
+// ============================================================================
+// NEW DATA STRUCTURE - Separates generic property data from user-specific data
+// ============================================================================
+
+// Generic property data stored by UPRN (shared across all users)
+export interface GenericPropertyData {
+  data: any  // Full API response
+  lastFetched: number
+  fetchedCount: number
+}
+
+export interface PropertiesStore {
+  [uprn: string]: GenericPropertyData
+}
+
+// User-specific analysis data
+export interface UserAnalysis {
+  uprn: string  // Reference to property in PropertiesStore
+  searchAddress: string
+  searchPostcode: string
+  timestamp: number
+  
+  // Selected comparables for this analysis
+  selectedComparables: string[]
+  
+  // Calculated values specific to this analysis
+  calculatedValuation?: number
+  valuationBasedOnComparables?: number
+  lastValuationUpdate?: number
+  
+  calculatedRent?: number
+  rentBasedOnComparables?: number
+  lastRentUpdate?: number
+  
+  calculatedYield?: number
+  lastYieldUpdate?: number
+  
+  // Filter settings used
+  filters: {
+    propertyType: string
+    minBeds: string
+    maxBeds: string
+    minBaths: string
+    maxBaths: string
+  }
+}
+
+export interface UserAnalysesStore {
+  [analysisId: string]: UserAnalysis
+}
+
+// Recent analyses list (for quick access)
+export interface RecentAnalysisItem {
+  analysisId: string
+  timestamp: number
+}
+
+// ============================================================================
+// DEPRECATED - Kept for migration only
+// ============================================================================
 
 export interface PersistedPropertyData {
   data: any
@@ -40,6 +105,7 @@ export interface PropertyDataStore {
 }
 
 export interface CalculatorData {
+  notes?: string
   purchaseType: 'mortgage' | 'cash' | 'bridging'
   includeFeesInLoan: boolean
   bridgingDetails: {
@@ -70,6 +136,7 @@ export interface CalculatorData {
     stampDutyPercent: string
     ila: string
     brokerFees: string
+    auctionFees: string
     findersFee: string
   }
   purchaseFinance: {
@@ -303,12 +370,12 @@ export function updatePropertyInStore(propertyId: string, updates: Partial<Prope
 export function deleteProperty(propertyId: string): void {
   if (typeof window === 'undefined') return
   
-  // Remove from propertyDataStore
+  // Remove from propertyDataStore (legacy)
   const store = loadPropertyDataStore()
   delete store[propertyId]
   savePropertyDataStore(store)
   
-  // Remove from recentAnalyses
+  // Remove from recentAnalyses (legacy)
   try {
     const savedAnalyses = localStorage.getItem('recentAnalyses')
     if (savedAnalyses) {
@@ -319,6 +386,9 @@ export function deleteProperty(propertyId: string): void {
   } catch (e) {
     console.error('Failed to remove from recentAnalyses:', e)
   }
+  
+  // Remove from new user analyses store
+  deleteUserAnalysis(propertyId)
   
   // Remove from calculator data
   const allCalculatorData = loadFromStorage<PersistedCalculatorData>(STORAGE_KEYS.CALCULATOR_DATA, {})
@@ -335,4 +405,236 @@ export function deleteProperty(propertyId: string): void {
     }
   })
   savePropertyLists(lists)
+}
+
+// ============================================================================
+// NEW STORAGE FUNCTIONS
+// ============================================================================
+
+// Extract UPRN from property data
+export function extractUPRN(propertyData: any): string | null {
+  try {
+    return propertyData?.data?.attributes?.identities?.ordnance_survey?.uprn || null
+  } catch (e) {
+    console.error('Failed to extract UPRN:', e)
+    return null
+  }
+}
+
+// Generic Properties Store (keyed by UPRN)
+export function loadPropertiesStore(): PropertiesStore {
+  return loadFromStorage<PropertiesStore>(STORAGE_KEYS.PROPERTIES, {})
+}
+
+export function savePropertiesStore(store: PropertiesStore): void {
+  saveToStorage(STORAGE_KEYS.PROPERTIES, store)
+}
+
+export function saveGenericProperty(uprn: string, propertyData: any): void {
+  if (!uprn) return
+  
+  const store = loadPropertiesStore()
+  const existing = store[uprn]
+  
+  store[uprn] = {
+    data: propertyData,
+    lastFetched: Date.now(),
+    fetchedCount: (existing?.fetchedCount || 0) + 1
+  }
+  
+  savePropertiesStore(store)
+}
+
+export function getGenericProperty(uprn: string): GenericPropertyData | null {
+  if (!uprn) return null
+  const store = loadPropertiesStore()
+  return store[uprn] || null
+}
+
+// User Analyses Store (keyed by analysisId)
+export function loadUserAnalysesStore(): UserAnalysesStore {
+  return loadFromStorage<UserAnalysesStore>(STORAGE_KEYS.USER_ANALYSES, {})
+}
+
+export function saveUserAnalysesStore(store: UserAnalysesStore): void {
+  saveToStorage(STORAGE_KEYS.USER_ANALYSES, store)
+}
+
+export function saveUserAnalysis(analysisId: string, analysis: UserAnalysis): void {
+  if (!analysisId) return
+  
+  const store = loadUserAnalysesStore()
+  store[analysisId] = analysis
+  saveUserAnalysesStore(store)
+  
+  // Also update recent analyses list
+  addToRecentAnalyses(analysisId)
+}
+
+export function getUserAnalysis(analysisId: string): UserAnalysis | null {
+  if (!analysisId) return null
+  const store = loadUserAnalysesStore()
+  return store[analysisId] || null
+}
+
+export function updateUserAnalysis(analysisId: string, updates: Partial<UserAnalysis>): void {
+  if (!analysisId) return
+  
+  const store = loadUserAnalysesStore()
+  if (store[analysisId]) {
+    store[analysisId] = { ...store[analysisId], ...updates }
+    saveUserAnalysesStore(store)
+  }
+}
+
+export function deleteUserAnalysis(analysisId: string): void {
+  if (!analysisId) return
+  
+  const store = loadUserAnalysesStore()
+  delete store[analysisId]
+  saveUserAnalysesStore(store)
+  
+  // Also remove from recent analyses
+  removeFromRecentAnalyses(analysisId)
+}
+
+// Recent Analyses List
+export function loadRecentAnalyses(): RecentAnalysisItem[] {
+  return loadFromStorage<RecentAnalysisItem[]>(STORAGE_KEYS.RECENT_ANALYSES, [])
+}
+
+export function saveRecentAnalyses(analyses: RecentAnalysisItem[]): void {
+  saveToStorage(STORAGE_KEYS.RECENT_ANALYSES, analyses)
+}
+
+export function addToRecentAnalyses(analysisId: string): void {
+  const recent = loadRecentAnalyses()
+  
+  // Remove if already exists
+  const filtered = recent.filter(item => item.analysisId !== analysisId)
+  
+  // Add to beginning
+  const updated = [
+    { analysisId, timestamp: Date.now() },
+    ...filtered
+  ].slice(0, 50) // Keep last 50
+  
+  saveRecentAnalyses(updated)
+}
+
+export function removeFromRecentAnalyses(analysisId: string): void {
+  const recent = loadRecentAnalyses()
+  const filtered = recent.filter(item => item.analysisId !== analysisId)
+  saveRecentAnalyses(filtered)
+}
+
+// Get full analysis data (combines property data + user analysis)
+export function getFullAnalysisData(analysisId: string): { propertyData: any, userAnalysis: UserAnalysis } | null {
+  const userAnalysis = getUserAnalysis(analysisId)
+  if (!userAnalysis) return null
+  
+  const genericProperty = getGenericProperty(userAnalysis.uprn)
+  if (!genericProperty) return null
+  
+  return {
+    propertyData: genericProperty.data,
+    userAnalysis
+  }
+}
+
+// ============================================================================
+// MIGRATION FUNCTIONS
+// ============================================================================
+
+export function migrateOldDataToNewStructure(): { success: boolean, migrated: number, errors: string[] } {
+  if (typeof window === 'undefined') return { success: false, migrated: 0, errors: ['Not in browser environment'] }
+  
+  const errors: string[] = []
+  let migrated = 0
+  
+  try {
+    // Check if migration already done
+    const migrationFlag = localStorage.getItem('estimo_migration_completed')
+    if (migrationFlag === 'true') {
+      console.log('Migration already completed')
+      return { success: true, migrated: 0, errors: [] }
+    }
+    
+    // Migrate propertyDataStore
+    const oldStore = loadPropertyDataStore()
+    const oldAnalyses = JSON.parse(localStorage.getItem('recentAnalyses') || '[]')
+    
+    console.log(`Migrating ${Object.keys(oldStore).length} properties from old structure...`)
+    
+    Object.entries(oldStore).forEach(([analysisId, propertyItem]) => {
+      try {
+        // Extract UPRN
+        const uprn = extractUPRN(propertyItem)
+        if (!uprn) {
+          errors.push(`No UPRN found for analysis ${analysisId}`)
+          return
+        }
+        
+        // Save generic property data (only if not already saved)
+        const existingProperty = getGenericProperty(uprn)
+        if (!existingProperty) {
+          saveGenericProperty(uprn, propertyItem.data || propertyItem)
+        }
+        
+        // Find matching recent analysis for metadata
+        const recentAnalysis = oldAnalyses.find((a: any) => a.id === analysisId)
+        
+        // Create user analysis
+        const userAnalysis: UserAnalysis = {
+          uprn,
+          searchAddress: '',
+          searchPostcode: '',
+          timestamp: recentAnalysis?.searchDate ? new Date(recentAnalysis.searchDate).getTime() : Date.now(),
+          selectedComparables: recentAnalysis?.comparables || [],
+          calculatedValuation: propertyItem.calculatedValuation,
+          valuationBasedOnComparables: propertyItem.valuationBasedOnComparables,
+          lastValuationUpdate: propertyItem.lastValuationUpdate,
+          calculatedRent: propertyItem.calculatedRent,
+          rentBasedOnComparables: propertyItem.rentBasedOnComparables,
+          lastRentUpdate: propertyItem.lastRentUpdate,
+          calculatedYield: propertyItem.calculatedYield,
+          lastYieldUpdate: propertyItem.lastYieldUpdate,
+          filters: recentAnalysis?.filters || {
+            propertyType: '',
+            minBeds: '',
+            maxBeds: '',
+            minBaths: '',
+            maxBaths: ''
+          }
+        }
+        
+        saveUserAnalysis(analysisId, userAnalysis)
+        migrated++
+      } catch (e) {
+        errors.push(`Error migrating ${analysisId}: ${e}`)
+      }
+    })
+    
+    // Mark migration as complete
+    localStorage.setItem('estimo_migration_completed', 'true')
+    
+    console.log(`Migration completed: ${migrated} properties migrated, ${errors.length} errors`)
+    return { success: true, migrated, errors }
+    
+  } catch (e) {
+    errors.push(`Migration failed: ${e}`)
+    return { success: false, migrated, errors }
+  }
+}
+
+// Run migration automatically on first load
+export function autoMigrate(): void {
+  if (typeof window === 'undefined') return
+  
+  const migrationFlag = localStorage.getItem('estimo_migration_completed')
+  if (migrationFlag !== 'true') {
+    console.log('Auto-migration starting...')
+    const result = migrateOldDataToNewStructure()
+    console.log('Auto-migration result:', result)
+  }
 }

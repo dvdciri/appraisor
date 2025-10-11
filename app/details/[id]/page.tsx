@@ -64,120 +64,106 @@ export default function PropertyDetailsPage() {
 
   // Load property data from localStorage based on ID - NO API CALLS
   useEffect(() => {
-    try {
-      const savedAnalyses = typeof window !== 'undefined' ? localStorage.getItem('recentAnalyses') : null
-      
-      console.log('Loading property data for UID:', params.id)
-      console.log('Saved analyses:', savedAnalyses ? JSON.parse(savedAnalyses).length : 0, 'items')
-      
-      if (savedAnalyses && params.id) {
-        const analyses = JSON.parse(savedAnalyses)
-        console.log('Available analysis UIDs:', analyses.map((a: any) => a.id))
+    // Dynamic import to avoid SSR issues
+    import('../../../lib/persistence').then(({ getFullAnalysisData, loadRecentAnalyses, autoMigrate }) => {
+      try {
+        // Run migration first
+        autoMigrate()
         
-        const analysis = analyses.find((a: any) => a.id === params.id)
+        console.log('Loading property data for UID:', params.id)
         
-        if (analysis) {
-          console.log('Found analysis with UID:', analysis.id)
+        if (params.id) {
+          // Load from new storage structure
+          const fullData = getFullAnalysisData(params.id as string)
           
-          // Load from property data store (single source of truth)
-          try {
-            const propertyDataStore = JSON.parse(localStorage.getItem('propertyDataStore') || '{}')
-            const propertyData = propertyDataStore[params.id as string]
-            if (propertyData) {
-              console.log('Loaded property data from propertyDataStore')
-              setPropertyData(propertyData)
-            } else {
-              console.error('No property data found in propertyDataStore for:', params.id)
-            }
-          } catch (e) {
-            console.error('Failed to load from propertyDataStore:', e)
-          }
-          
-          setComparables(new Set(analysis.comparables))
-          setFilters(analysis.filters)
-        } else {
-          console.error('No analysis found with UID:', params.id)
-          // Fallback: try to load the most recent analysis
-          if (analyses.length > 0) {
-            const mostRecentId = analyses[0].id
-            console.log('Falling back to most recent analysis with UID:', mostRecentId)
+          if (fullData) {
+            console.log('Loaded property data from new storage structure')
+            // Combine property data with user analysis for backward compatibility
+            setPropertyData({
+              ...fullData.propertyData,
+              calculatedValuation: fullData.userAnalysis.calculatedValuation,
+              valuationBasedOnComparables: fullData.userAnalysis.valuationBasedOnComparables,
+              lastValuationUpdate: fullData.userAnalysis.lastValuationUpdate,
+              calculatedRent: fullData.userAnalysis.calculatedRent,
+              rentBasedOnComparables: fullData.userAnalysis.rentBasedOnComparables,
+              lastRentUpdate: fullData.userAnalysis.lastRentUpdate,
+              calculatedYield: fullData.userAnalysis.calculatedYield,
+              lastYieldUpdate: fullData.userAnalysis.lastYieldUpdate
+            })
+            setComparables(new Set(fullData.userAnalysis.selectedComparables))
+            setFilters(fullData.userAnalysis.filters)
+          } else {
+            console.error('No analysis found for UID:', params.id)
             
-            try {
-              const propertyDataStore = JSON.parse(localStorage.getItem('propertyDataStore') || '{}')
-              const propertyData = propertyDataStore[mostRecentId]
-              if (propertyData) {
-                setPropertyData(propertyData)
+            // Fallback: try to load the most recent analysis
+            const recentList = loadRecentAnalyses()
+            if (recentList.length > 0) {
+              const mostRecentId = recentList[0].analysisId
+              console.log('Falling back to most recent analysis with UID:', mostRecentId)
+              
+              const fallbackData = getFullAnalysisData(mostRecentId)
+              if (fallbackData) {
+                setPropertyData({
+                  ...fallbackData.propertyData,
+                  calculatedValuation: fallbackData.userAnalysis.calculatedValuation,
+                  valuationBasedOnComparables: fallbackData.userAnalysis.valuationBasedOnComparables,
+                  lastValuationUpdate: fallbackData.userAnalysis.lastValuationUpdate,
+                  calculatedRent: fallbackData.userAnalysis.calculatedRent,
+                  rentBasedOnComparables: fallbackData.userAnalysis.rentBasedOnComparables,
+                  lastRentUpdate: fallbackData.userAnalysis.lastRentUpdate,
+                  calculatedYield: fallbackData.userAnalysis.calculatedYield,
+                  lastYieldUpdate: fallbackData.userAnalysis.lastYieldUpdate
+                })
+                setComparables(new Set(fallbackData.userAnalysis.selectedComparables))
+                setFilters(fallbackData.userAnalysis.filters)
               }
-            } catch (e) {
-              console.error('Failed to load fallback property data:', e)
             }
-            
-            setComparables(new Set(analyses[0].comparables))
-            setFilters(analyses[0].filters)
           }
+        } else {
+          console.error('No UID provided')
         }
-      } else {
-        console.error('No saved analyses found or no UID provided')
+      } catch (e) {
+        console.error('Failed to load property data', e)
+      } finally {
+        setLoading(false)
       }
-    } catch (e) {
-      console.error('Failed to load property data', e)
-    } finally {
-      setLoading(false)
-    }
+    })
   }, [params.id])
 
   const updateComparables = (newComparables: Set<string>) => {
     setComparables(newComparables)
     
-    // Update the analysis data in recentAnalyses
-    try {
-      if (typeof window !== 'undefined' && params.id) {
-        const savedAnalyses = localStorage.getItem('recentAnalyses')
-        if (savedAnalyses) {
-          const analyses = JSON.parse(savedAnalyses)
-          const analysisIndex = analyses.findIndex((a: any) => a.id === params.id)
-          
-          if (analysisIndex !== -1) {
-            // Update the analysis with new comparables
-            analyses[analysisIndex].comparables = Array.from(newComparables)
-            localStorage.setItem('recentAnalyses', JSON.stringify(analyses))
-            console.log('Updated comparables in analysis:', params.id, 'with', newComparables.size, 'items')
-          }
+    // Update the analysis data in new storage structure
+    import('../../../lib/persistence').then(({ updateUserAnalysis }) => {
+      try {
+        if (typeof window !== 'undefined' && params.id) {
+          updateUserAnalysis(params.id as string, {
+            selectedComparables: Array.from(newComparables)
+          })
+          console.log('Updated comparables in analysis:', params.id, 'with', newComparables.size, 'items')
         }
-        
-        // Also update the separate comparables key for backward compatibility
-        localStorage.setItem('comparables', JSON.stringify(Array.from(newComparables)))
+      } catch (e) {
+        console.error('Failed to save comparables', e)
       }
-    } catch (e) {
-      console.error('Failed to save comparables', e)
-    }
+    })
   }
 
   const updateFilters = (newFilters: typeof filters) => {
     setFilters(newFilters)
     
-    // Update the analysis data in recentAnalyses
-    try {
-      if (typeof window !== 'undefined' && params.id) {
-        const savedAnalyses = localStorage.getItem('recentAnalyses')
-        if (savedAnalyses) {
-          const analyses = JSON.parse(savedAnalyses)
-          const analysisIndex = analyses.findIndex((a: any) => a.id === params.id)
-          
-          if (analysisIndex !== -1) {
-            // Update the analysis with new filters
-            analyses[analysisIndex].filters = newFilters
-            localStorage.setItem('recentAnalyses', JSON.stringify(analyses))
-            console.log('Updated filters in analysis:', params.id)
-          }
+    // Update the analysis data in new storage structure
+    import('../../../lib/persistence').then(({ updateUserAnalysis }) => {
+      try {
+        if (typeof window !== 'undefined' && params.id) {
+          updateUserAnalysis(params.id as string, {
+            filters: newFilters
+          })
+          console.log('Updated filters in analysis:', params.id)
         }
-        
-        // Also update the separate filters key for backward compatibility
-        localStorage.setItem('soldNearbyFilters', JSON.stringify(newFilters))
+      } catch (e) {
+        console.error('Failed to save filters', e)
       }
-    } catch (e) {
-      console.error('Failed to save filters', e)
-    }
+    })
   }
 
   if (loading) {

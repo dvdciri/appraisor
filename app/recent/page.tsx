@@ -62,16 +62,24 @@ function RecentPropertyItem({ analysis, index, onClick, onDelete }: { analysis: 
   const [propertyData, setPropertyData] = useState<PropertyData | null>(null)
 
   useEffect(() => {
-    // Load property data from store
-    try {
-      const propertyDataStore = JSON.parse(localStorage.getItem('propertyDataStore') || '{}')
-      const data = propertyDataStore[analysis.id]
-      if (data) {
-        setPropertyData(data)
+    // Load property data from new storage structure
+    import('../../lib/persistence').then(({ getFullAnalysisData }) => {
+      try {
+        const fullData = getFullAnalysisData(analysis.id)
+        if (fullData) {
+          // Combine property data with user analysis for backward compatibility
+          const combined = {
+            ...fullData.propertyData,
+            calculatedValuation: fullData.userAnalysis.calculatedValuation,
+            valuationBasedOnComparables: fullData.userAnalysis.valuationBasedOnComparables,
+            lastValuationUpdate: fullData.userAnalysis.lastValuationUpdate
+          }
+          setPropertyData(combined)
+        }
+      } catch (e) {
+        console.error('Failed to load property data for list item:', e)
       }
-    } catch (e) {
-      console.error('Failed to load property data for list item:', e)
-    }
+    })
   }, [analysis.id])
 
   if (!propertyData) {
@@ -158,17 +166,36 @@ export default function RecentPage() {
   const [recentAnalyses, setRecentAnalyses] = useState<RecentAnalysis[]>([])
   const [searchTerm, setSearchTerm] = useState('')
 
-  // Load recent analyses on mount
+  // Load recent analyses on mount and run migration
   useEffect(() => {
-    try {
-      const savedAnalyses = typeof window !== 'undefined' ? localStorage.getItem('recentAnalyses') : null
-      if (savedAnalyses) {
-        const analyses = JSON.parse(savedAnalyses)
+    // Dynamic import to avoid SSR issues
+    import('../../lib/persistence').then(({ loadRecentAnalyses, getUserAnalysis, autoMigrate }) => {
+      try {
+        // Run migration first
+        autoMigrate()
+        
+        // Load from new storage structure
+        const recentList = loadRecentAnalyses()
+        
+        // Convert new format to old format for backward compatibility
+        const analyses: RecentAnalysis[] = recentList.map((item: any) => {
+          const userAnalysis = getUserAnalysis(item.analysisId)
+          if (userAnalysis) {
+            return {
+              id: item.analysisId,
+              searchDate: new Date(item.timestamp).toISOString(),
+              comparables: userAnalysis.selectedComparables,
+              filters: userAnalysis.filters
+            }
+          }
+          return null
+        }).filter((a: any): a is RecentAnalysis => a !== null)
+        
         setRecentAnalyses(analyses)
+      } catch (e) {
+        console.error('Failed to restore recent analyses', e)
       }
-    } catch (e) {
-      console.error('Failed to restore recent analyses', e)
-    }
+    })
   }, [])
 
   const loadRecentAnalysis = (analysis: RecentAnalysis) => {
@@ -178,12 +205,22 @@ export default function RecentPage() {
 
   const clearRecentAnalyses = () => {
     setRecentAnalyses([])
-    try {
-      localStorage.removeItem('recentAnalyses')
-      localStorage.removeItem('propertyDataStore')
-    } catch (e) {
-      console.error('Failed to clear recent analyses', e)
-    }
+    
+    // Dynamic import to clear all data
+    import('../../lib/persistence').then(({ saveRecentAnalyses, saveUserAnalysesStore, savePropertiesStore }) => {
+      try {
+        // Clear new storage
+        saveRecentAnalyses([])
+        saveUserAnalysesStore({})
+        // Note: We keep generic properties as they might be referenced by other data
+        
+        // Clear legacy storage
+        localStorage.removeItem('recentAnalyses')
+        localStorage.removeItem('propertyDataStore')
+      } catch (e) {
+        console.error('Failed to clear recent analyses', e)
+      }
+    })
   }
 
   const handleDeleteProperty = (propertyId: string) => {
@@ -196,12 +233,12 @@ export default function RecentPage() {
     if (!searchTerm) return true
     
     try {
-      const propertyDataStore = JSON.parse(localStorage.getItem('propertyDataStore') || '{}')
-      const data = propertyDataStore[analysis.id]
-      if (!data) return false
+      const { getFullAnalysisData } = require('../../lib/persistence')
+      const fullData = getFullAnalysisData(analysis.id)
+      if (!fullData) return false
       
-      const address = data.data.attributes.address.street_group_format.address_lines.toLowerCase()
-      const postcode = data.data.attributes.address.street_group_format.postcode.toLowerCase()
+      const address = fullData.propertyData.data.attributes.address.street_group_format.address_lines.toLowerCase()
+      const postcode = fullData.propertyData.data.attributes.address.street_group_format.postcode.toLowerCase()
       const search = searchTerm.toLowerCase()
       
       return address.includes(search) || postcode.includes(search)

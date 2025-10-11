@@ -115,7 +115,11 @@ function InputRow({
   )
 }
 
-function InvestmentCalculator({ propertyId }: { propertyId: string | undefined }) {
+function InvestmentCalculator({ propertyId, onNotesModalOpen, notes }: { 
+  propertyId: string | undefined,
+  onNotesModalOpen: (notes: string) => void,
+  notes: string
+}) {
   // State for purchase type toggle
   const [purchaseType, setPurchaseType] = useState<'mortgage' | 'cash' | 'bridging'>('mortgage')
   
@@ -211,6 +215,7 @@ function InvestmentCalculator({ propertyId }: { propertyId: string | undefined }
     stampDutyPercent: '',
     ila: '',
     brokerFees: '',
+    auctionFees: '',
     findersFee: ''
   })
 
@@ -241,6 +246,7 @@ function InvestmentCalculator({ propertyId }: { propertyId: string | undefined }
   })
 
   const [propertyValue, setPropertyValue] = useState('')
+  
 
   // Track if we've loaded data to prevent overwriting on mount
   const hasLoadedData = useRef(false)
@@ -287,6 +293,7 @@ function InvestmentCalculator({ propertyId }: { propertyId: string | undefined }
     if (!propertyId || !hasLoadedData.current) return
     
     const calculatorData: CalculatorData = {
+      notes,
       purchaseType,
       includeFeesInLoan,
       bridgingDetails,
@@ -305,6 +312,7 @@ function InvestmentCalculator({ propertyId }: { propertyId: string | undefined }
     saveCalculatorData(propertyId, calculatorData)
   }, [
     propertyId,
+    notes,
     purchaseType,
     includeFeesInLoan,
     bridgingDetails,
@@ -370,6 +378,7 @@ function InvestmentCalculator({ propertyId }: { propertyId: string | undefined }
     parseFloat(initialCosts.refurbRepair || '0') + 
     parseFloat(initialCosts.ila || '0') + 
     parseFloat(initialCosts.brokerFees || '0') + 
+    parseFloat(initialCosts.auctionFees || '0') + 
     parseFloat(initialCosts.findersFee || '0')
   
   const totalInitialCosts = otherInitialCosts + stampDutyAmount
@@ -584,8 +593,58 @@ function InvestmentCalculator({ propertyId }: { propertyId: string | undefined }
     ? formatCurrency(finalLoanAmount.toString())
     : ''
 
+  // Handle notes modal
+  const handleOpenNotesModal = () => {
+    onNotesModalOpen(notes)
+  }
+
   return (
     <div className="space-y-8">
+      {/* Notes Box - Always visible, clickable to edit */}
+      <div 
+        onClick={handleOpenNotesModal}
+        className="bg-gradient-to-br from-blue-900/40 to-purple-900/40 rounded-xl border border-blue-500/50 p-6 animate-enter-subtle cursor-pointer hover:border-blue-400/70 transition-colors"
+      >
+        <div className="flex items-start gap-3">
+          <svg className="w-6 h-6 text-blue-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <div className="flex-1">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-lg font-semibold text-white">Notes</h3>
+            </div>
+            {notes ? (
+              <div className="text-gray-200 whitespace-pre-wrap text-sm">
+                {notes.split(/(\n)/g).map((part, index) => {
+                  if (part === '\n') {
+                    return <br key={index} />
+                  }
+                  return part.split(/(https?:\/\/[^\s]+)/g).map((urlPart, urlIndex) => 
+                    urlPart.match(/^https?:\/\//) ? (
+                      <a 
+                        key={`${index}-${urlIndex}`}
+                        href={urlPart} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:text-blue-300 underline text-xs"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {urlPart}
+                      </a>
+                    ) : (
+                      urlPart
+                    )
+                  )
+                })}
+              </div>
+            ) : (
+              <p className="text-gray-400 italic text-sm">Click to add notes about your calculations and assumptions...</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+
       {/* Main Calculator Sections */}
       <div className="space-y-8">
         {/* Purchase Section */}
@@ -604,7 +663,17 @@ function InvestmentCalculator({ propertyId }: { propertyId: string | undefined }
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm text-gray-300 mb-3 block font-medium">Stamp Duty</label>
+                  <label className="text-sm text-gray-300 mb-3 block font-medium">
+                    Stamp Duty
+                    <a 
+                      href="https://www.tax.service.gov.uk/calculate-stamp-duty-land-tax" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="ml-2 text-xs text-blue-400 hover:text-blue-300 underline"
+                    >
+                      Calculate
+                    </a>
+                  </label>
                   <div className="space-y-2">
                     <div className="grid grid-cols-2 gap-2">
                       <div>
@@ -648,7 +717,7 @@ function InvestmentCalculator({ propertyId }: { propertyId: string | undefined }
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-1 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm text-gray-300 mb-3 block font-medium">Broker Fees</label>
                   <input
@@ -656,6 +725,18 @@ function InvestmentCalculator({ propertyId }: { propertyId: string | undefined }
                     value={editingInput === 'brokerFees' ? initialCosts.brokerFees : formatCurrency(initialCosts.brokerFees)}
                     onChange={(e) => handleCurrencyChange(e.target.value, (val) => setInitialCosts(prev => ({ ...prev, brokerFees: val })))}
                     onFocus={() => setEditingInput('brokerFees')}
+                    onBlur={() => setEditingInput(null)}
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white text-lg font-semibold focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    placeholder="£0.00"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm text-gray-300 mb-3 block font-medium">Auction Fees</label>
+                  <input
+                    type="text"
+                    value={editingInput === 'auctionFees' ? initialCosts.auctionFees : formatCurrency(initialCosts.auctionFees)}
+                    onChange={(e) => handleCurrencyChange(e.target.value, (val) => setInitialCosts(prev => ({ ...prev, auctionFees: val })))}
+                    onFocus={() => setEditingInput('auctionFees')}
                     onBlur={() => setEditingInput(null)}
                     className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white text-lg font-semibold focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     placeholder="£0.00"
@@ -1053,7 +1134,7 @@ function InvestmentCalculator({ propertyId }: { propertyId: string | undefined }
         {amountNeededToPurchase > 0 ? (
         <div className="bg-gray-900 rounded-xl p-8 animate-enter-subtle-delayed">
           <div 
-            className="flex justify-between items-center mb-8 cursor-pointer"
+            className={`flex justify-between items-center cursor-pointer ${isRefurbExpanded ? 'mb-8' : ''}`}
             onClick={() => setIsRefurbExpanded(!isRefurbExpanded)}
           >
             <h2 className="text-3xl font-bold text-white flex items-center gap-3">
@@ -1144,7 +1225,7 @@ function InvestmentCalculator({ propertyId }: { propertyId: string | undefined }
         {amountNeededToPurchase > 0 ? (
         <div className="bg-gray-900 rounded-xl p-8 animate-enter-subtle-delayed-2">
           <h2 
-            className="text-3xl font-bold text-white mb-8 flex items-center gap-3 cursor-pointer"
+            className={`text-3xl font-bold text-white flex items-center gap-3 cursor-pointer ${isFundingExpanded ? 'mb-8' : ''}`}
             onClick={() => setIsFundingExpanded(!isFundingExpanded)}
           >
             <span className="text-4xl">📊</span> Project Funding
@@ -1319,7 +1400,7 @@ function InvestmentCalculator({ propertyId }: { propertyId: string | undefined }
         {amountNeededToPurchase > 0 ? (
         <div className="bg-gray-900 rounded-xl p-8 animate-enter-subtle-delayed-3">
           <h2 
-            className="text-3xl font-bold text-white mb-8 flex items-center gap-3 cursor-pointer"
+            className={`text-3xl font-bold text-white flex items-center gap-3 cursor-pointer ${isExitStrategyExpanded ? 'mb-8' : ''}`}
             onClick={() => setIsExitStrategyExpanded(!isExitStrategyExpanded)}
           >
             <span className="text-4xl">🚪</span> Exit Strategy
@@ -1541,7 +1622,7 @@ function InvestmentCalculator({ propertyId }: { propertyId: string | undefined }
                     </h3>
                     <div className="text-right">
                       <span className={`text-4xl font-bold ${moneyLeftInDeal >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                        {moneyLeftInDeal >= 0 ? '+' : ''}£{Math.abs(moneyLeftInDeal).toLocaleString()}
+                        {moneyLeftInDeal >= 0 ? '+' : '-'}£{Math.abs(moneyLeftInDeal).toLocaleString()}
                       </span>
                       <div className="text-sm text-gray-400 mt-1">
                         {moneyLeftInDeal >= 0 ? 'Surplus funds on refinance' : 'Shortfall funds on refinance'}
@@ -1990,64 +2071,114 @@ export default function InvestPage() {
   const searchParams = useSearchParams()
   const [propertyData, setPropertyData] = useState<PropertyData | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
+  
+  // Notes modal state
+  const [notes, setNotes] = useState('')
+  const [isNotesModalOpen, setIsNotesModalOpen] = useState(false)
+  const [tempNotes, setTempNotes] = useState('')
+
+  // Modal handlers
+  const handleOpenNotesModal = (currentNotes: string) => {
+    setTempNotes(currentNotes)
+    setIsNotesModalOpen(true)
+  }
+
+  const handleSaveNotes = () => {
+    setNotes(tempNotes)
+    setIsNotesModalOpen(false)
+  }
+
+  const handleCloseNotesModal = () => {
+    setIsNotesModalOpen(false)
+    setTempNotes(notes)
+  }
+
+  // Load calculator data and sync notes
+  useEffect(() => {
+    if (!params.id) return
+    
+    import('../../../lib/persistence').then(({ loadCalculatorData }) => {
+      const savedData = loadCalculatorData(params.id as string)
+      if (savedData?.notes) {
+        setNotes(savedData.notes)
+      }
+    })
+  }, [params.id])
+
+  // Save notes when they change
+  useEffect(() => {
+    if (!params.id || !notes) return
+    
+    import('../../../lib/persistence').then(({ loadCalculatorData, saveCalculatorData }) => {
+      const currentData = loadCalculatorData(params.id as string)
+      if (currentData) {
+        saveCalculatorData(params.id as string, { ...currentData, notes })
+      }
+    })
+  }, [notes, params.id])
 
   // Load property data based on ID parameter - NO API CALLS
   useEffect(() => {
-    try {
-      // Load from recent analyses by ID
-      const savedAnalyses = typeof window !== 'undefined' ? localStorage.getItem('recentAnalyses') : null
-      
-      console.log('Loading property data for analysis UID:', params.id)
-      console.log('Saved analyses:', savedAnalyses ? JSON.parse(savedAnalyses).length : 0, 'items')
-      
-      if (savedAnalyses && params.id) {
-        const analyses = JSON.parse(savedAnalyses)
-        console.log('Available analysis UIDs:', analyses.map((a: any) => a.id))
+    // Dynamic import to avoid SSR issues
+    import('../../../lib/persistence').then(({ getFullAnalysisData, loadRecentAnalyses, autoMigrate }) => {
+      try {
+        // Run migration first
+        autoMigrate()
         
-        const analysis = analyses.find((a: any) => a.id === params.id)
+        console.log('Loading property data for analysis UID:', params.id)
         
-        if (analysis) {
-          console.log('Found analysis for investment view with UID:', analysis.id)
+        if (params.id) {
+          // Load from new storage structure
+          const fullData = getFullAnalysisData(params.id as string)
           
-          // Load from property data store (single source of truth)
-          try {
-            const propertyDataStore = JSON.parse(localStorage.getItem('propertyDataStore') || '{}')
-            const propertyData = propertyDataStore[params.id as string]
-            if (propertyData) {
-              console.log('Loaded property data from propertyDataStore')
-              setPropertyData(propertyData)
-            } else {
-              console.error('No property data found in propertyDataStore for:', params.id)
+          if (fullData) {
+            console.log('Loaded property data from new storage structure')
+            // Combine property data with user analysis for backward compatibility
+            setPropertyData({
+              ...fullData.propertyData,
+              calculatedValuation: fullData.userAnalysis.calculatedValuation,
+              valuationBasedOnComparables: fullData.userAnalysis.valuationBasedOnComparables,
+              lastValuationUpdate: fullData.userAnalysis.lastValuationUpdate,
+              calculatedRent: fullData.userAnalysis.calculatedRent,
+              rentBasedOnComparables: fullData.userAnalysis.rentBasedOnComparables,
+              lastRentUpdate: fullData.userAnalysis.lastRentUpdate,
+              calculatedYield: fullData.userAnalysis.calculatedYield,
+              lastYieldUpdate: fullData.userAnalysis.lastYieldUpdate
+            })
+          } else {
+            console.error('No analysis found for UID:', params.id)
+            
+            // Fallback: try to load the most recent analysis
+            const recentList = loadRecentAnalyses()
+            if (recentList.length > 0) {
+              const mostRecentId = recentList[0].analysisId
+              console.log('Falling back to most recent analysis with UID:', mostRecentId)
+              
+              const fallbackData = getFullAnalysisData(mostRecentId)
+              if (fallbackData) {
+                setPropertyData({
+                  ...fallbackData.propertyData,
+                  calculatedValuation: fallbackData.userAnalysis.calculatedValuation,
+                  valuationBasedOnComparables: fallbackData.userAnalysis.valuationBasedOnComparables,
+                  lastValuationUpdate: fallbackData.userAnalysis.lastValuationUpdate,
+                  calculatedRent: fallbackData.userAnalysis.calculatedRent,
+                  rentBasedOnComparables: fallbackData.userAnalysis.rentBasedOnComparables,
+                  lastRentUpdate: fallbackData.userAnalysis.lastRentUpdate,
+                  calculatedYield: fallbackData.userAnalysis.calculatedYield,
+                  lastYieldUpdate: fallbackData.userAnalysis.lastYieldUpdate
+                })
+              }
             }
-          } catch (e) {
-            console.error('Failed to load from propertyDataStore:', e)
           }
         } else {
-          console.error('No analysis found with UID:', params.id)
-          // Fallback: try to load the most recent analysis
-          if (analyses.length > 0) {
-            const mostRecentId = analyses[0].id
-            console.log('Falling back to most recent analysis for investment view with UID:', mostRecentId)
-            
-            try {
-              const propertyDataStore = JSON.parse(localStorage.getItem('propertyDataStore') || '{}')
-              const propertyData = propertyDataStore[mostRecentId]
-              if (propertyData) {
-                setPropertyData(propertyData)
-              }
-            } catch (e) {
-              console.error('Failed to load fallback property data:', e)
-            }
-          }
+          console.error('No UID provided')
         }
-      } else {
-        console.error('No saved analyses found or no UID provided')
+      } catch (error) {
+        console.error('Failed to load property data:', error)
+      } finally {
+        setLoading(false)
       }
-    } catch (error) {
-      console.error('Failed to load property data:', error)
-    } finally {
-      setLoading(false)
-    }
+    })
   }, [params.id])
 
 
@@ -2077,11 +2208,64 @@ export default function InvestPage() {
             <div className="animate-enter-subtle-delayed-3">
               <InvestmentCalculator 
                 propertyId={params.id as string}
+                onNotesModalOpen={handleOpenNotesModal}
+                notes={notes}
               />
             </div>
           )}
         </div>
       </div>
+
+      {/* Notes Modal */}
+      {isNotesModalOpen && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-xl border border-gray-700 shadow-2xl max-w-2xl w-full max-h-[80vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-700">
+              <h3 className="text-2xl font-bold text-white flex items-center gap-2">
+                <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Calculator Notes
+              </h3>
+              <button
+                onClick={handleCloseNotesModal}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-6">
+              <textarea
+                value={tempNotes}
+                onChange={(e) => setTempNotes(e.target.value)}
+                placeholder="Add notes about your calculations, assumptions, or important details..."
+                className="w-full h-64 bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 resize-none"
+              />
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-700">
+              <button
+                onClick={handleCloseNotesModal}
+                className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveNotes}
+                className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium transition-colors"
+              >
+                Save Notes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

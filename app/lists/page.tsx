@@ -67,10 +67,14 @@ export default function ListsPage() {
   const [draggedListId, setDraggedListId] = useState<string | null>(null)
   const [movePropertyModal, setMovePropertyModal] = useState<{propertyId: string, fromListId: string} | null>(null)
 
-  // Load lists on mount
+  // Load lists on mount and run migration
   useEffect(() => {
-    loadLists()
-    loadRecentSearches()
+    // Run migration first
+    import('../../lib/persistence').then(({ autoMigrate }) => {
+      autoMigrate()
+      loadLists()
+      loadRecentSearches()
+    })
   }, [])
 
   // Update selected list when lists change
@@ -114,10 +118,25 @@ export default function ListsPage() {
 
   const loadRecentSearches = () => {
     try {
-      const savedAnalyses = localStorage.getItem('recentAnalyses')
-      if (savedAnalyses) {
-        setRecentSearches(JSON.parse(savedAnalyses))
-      }
+      // Load from new storage structure
+      const { loadRecentAnalyses: loadNewRecentAnalyses, getUserAnalysis } = require('../../lib/persistence')
+      const recentList = loadNewRecentAnalyses()
+      
+      // Convert new format to old format for backward compatibility
+      const analyses = recentList.map((item: any) => {
+        const userAnalysis = getUserAnalysis(item.analysisId)
+        if (userAnalysis) {
+          return {
+            id: item.analysisId,
+            searchDate: new Date(item.timestamp).toISOString(),
+            comparables: userAnalysis.selectedComparables,
+            filters: userAnalysis.filters
+          }
+        }
+        return null
+      }).filter((a: any) => a !== null)
+      
+      setRecentSearches(analyses)
     } catch (e) {
       console.error('Failed to load recent searches:', e)
     }
@@ -125,8 +144,26 @@ export default function ListsPage() {
 
   const getPropertyData = (propertyId: string): PropertyData | null => {
     try {
-      const propertyDataStore = JSON.parse(localStorage.getItem('propertyDataStore') || '{}')
-      return propertyDataStore[propertyId] || null
+      // Try new storage structure first
+      const { getFullAnalysisData } = require('../../lib/persistence')
+      const fullData = getFullAnalysisData(propertyId)
+      
+      if (fullData) {
+        // Return combined data for backward compatibility
+        return {
+          ...fullData.propertyData,
+          calculatedValuation: fullData.userAnalysis.calculatedValuation,
+          valuationBasedOnComparables: fullData.userAnalysis.valuationBasedOnComparables,
+          lastValuationUpdate: fullData.userAnalysis.lastValuationUpdate,
+          calculatedRent: fullData.userAnalysis.calculatedRent,
+          rentBasedOnComparables: fullData.userAnalysis.rentBasedOnComparables,
+          lastRentUpdate: fullData.userAnalysis.lastRentUpdate,
+          calculatedYield: fullData.userAnalysis.calculatedYield,
+          lastYieldUpdate: fullData.userAnalysis.lastYieldUpdate
+        }
+      }
+      
+      return null
     } catch (e) {
       console.error('Failed to load property data:', e)
       return null

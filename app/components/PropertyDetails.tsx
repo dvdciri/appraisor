@@ -9,7 +9,8 @@ import {
   removePropertyFromList,
   PropertyList,
   updatePropertyInStore,
-  getPropertyFromStore
+  getPropertyFromStore,
+  updateUserAnalysis
 } from '../../lib/persistence'
 import Toast from './Toast'
 
@@ -469,9 +470,9 @@ export default function PropertyDetails({
         const averagePrice = Math.round(totalPrice / selectedTransactions.length)
         setCalculatedValuation(averagePrice)
 
-        // Persist valuation to propertyDataStore using helper function
+        // Persist valuation to user analysis (new storage structure)
         try {
-          updatePropertyInStore(propertyId, {
+          updateUserAnalysis(propertyId, {
             calculatedValuation: averagePrice,
             valuationBasedOnComparables: selectedTransactions.length,
             lastValuationUpdate: Date.now()
@@ -488,7 +489,7 @@ export default function PropertyDetails({
       
       // Clear valuation from storage when no comparables selected
       try {
-        updatePropertyInStore(propertyId, {
+        updateUserAnalysis(propertyId, {
           calculatedValuation: undefined,
           valuationBasedOnComparables: undefined,
           lastValuationUpdate: undefined
@@ -550,9 +551,9 @@ export default function PropertyDetails({
       const averageRent = Math.round(totalRent / matchingListings.length)
       setCalculatedRent(averageRent)
 
-      // Persist rent to propertyDataStore
+      // Persist rent to user analysis (new storage structure)
       try {
-        updatePropertyInStore(propertyId, {
+        updateUserAnalysis(propertyId, {
           calculatedRent: averageRent,
           rentBasedOnComparables: matchingListings.length,
           lastRentUpdate: Date.now()
@@ -566,7 +567,7 @@ export default function PropertyDetails({
       
       // Clear rent from storage when no matching listings
       try {
-        updatePropertyInStore(propertyId, {
+        updateUserAnalysis(propertyId, {
           calculatedRent: undefined,
           rentBasedOnComparables: undefined,
           lastRentUpdate: undefined
@@ -584,10 +585,10 @@ export default function PropertyDetails({
       const yieldPercentage = (annualRent / calculatedValuation) * 100
       setCalculatedYield(yieldPercentage)
 
-      // Persist yield to propertyDataStore
+      // Persist yield to user analysis (new storage structure)
       if (propertyId) {
         try {
-          updatePropertyInStore(propertyId, {
+          updateUserAnalysis(propertyId, {
             calculatedYield: yieldPercentage,
             lastYieldUpdate: Date.now()
           })
@@ -602,7 +603,7 @@ export default function PropertyDetails({
       // Clear yield from storage when rent or valuation is missing
       if (propertyId) {
         try {
-          updatePropertyInStore(propertyId, {
+          updateUserAnalysis(propertyId, {
             calculatedYield: undefined,
             lastYieldUpdate: undefined
           })
