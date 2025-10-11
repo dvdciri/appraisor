@@ -93,7 +93,7 @@ export default function Header({
                 : 'text-gray-400 hover:text-white'
             }`}
           >
-            Manage Lists
+            Lists
           </Link>
           <Link
             href="/tasks"

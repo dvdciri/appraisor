@@ -270,8 +270,6 @@ export default function TasksPage() {
         showBackButton={true}
         onBackClick={handleBackClick}
         backButtonText="Back"
-        showHomeButton={true}
-        onHomeClick={() => router.push('/')}
       />
       
       <div className="container mx-auto px-4 py-8">

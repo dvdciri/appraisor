@@ -544,7 +544,7 @@ export default function Home() {
 
               {/* Action Menu Grid */}
               <div className="grid grid-cols-2 gap-4 animate-enter-subtle-delayed">
-                {/* Manage Lists */}
+                {/* Lists */}
                 <button
                   type="button"
                   onClick={() => router.push('/lists')}
@@ -557,7 +557,7 @@ export default function Home() {
                       </svg>
                     </div>
                     <div>
-                      <h3 className="text-white font-semibold">Manage Lists</h3>
+                      <h3 className="text-white font-semibold">Lists</h3>
                       <p className="text-gray-400 text-sm mt-1">Organize properties</p>
                     </div>
                   </div>

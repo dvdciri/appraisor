@@ -438,14 +438,12 @@ export default function ListsPage() {
           showBackButton={true}
           onBackClick={() => router.push('/')}
           backButtonText="Back"
-          showHomeButton={true}
-          onHomeClick={() => router.push('/')}
         />
         <div className="container mx-auto px-4 py-8">
           <div className="max-w-7xl mx-auto">
             {/* Page Title */}
             <div className="mb-6 animate-enter-subtle">
-              <h1 className="text-3xl font-bold text-white mb-2">Manage Lists</h1>
+              <h1 className="text-3xl font-bold text-white mb-2">Lists</h1>
               <p className="text-gray-400">Organize your properties into lists or create a pipeline with custom stages to move properties through your workflow</p>
             </div>
 
