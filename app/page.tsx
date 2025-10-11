@@ -1,23 +1,20 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Header from './components/Header'
 import Toast from './components/Toast'
-import { saveCalculatorData, type CalculatorData } from '../lib/persistence'
-
-interface RecentAnalysis {
-  id: string
-  searchDate: string
-  comparables: string[]
-  filters: {
-    propertyType: string
-    minBeds: string
-    maxBeds: string
-    minBaths: string
-    maxBaths: string
-  }
-}
+import { 
+  saveCalculatorData, 
+  type CalculatorData,
+  extractUPRN,
+  saveGenericProperty,
+  saveUserAnalysis,
+  type UserAnalysis,
+  getUserAnalysis,
+  autoMigrate,
+  loadUserAnalysesStore
+} from '../lib/persistence'
 
 // Generate a simple UID
 const generateUID = () => {
@@ -31,11 +28,29 @@ export default function Home() {
   const [loading, setLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
+  // Run migration on mount
+  useEffect(() => {
+    autoMigrate()
+  }, [])
+
   const saveToRecentAnalyses = (data: any, searchAddress: string, searchPostcode: string) => {
     const analysisId = generateUID()
     console.log('Creating new analysis with UID:', analysisId)
     
-    // Auto-select comparables based on criteria and calculate valuation FIRST
+    // Extract UPRN from property data
+    const uprn = extractUPRN(data)
+    if (!uprn) {
+      console.error('Failed to extract UPRN from property data')
+      throw new Error('Property data missing UPRN')
+    }
+    
+    console.log('Property UPRN:', uprn)
+    
+    // Save generic property data (shared across all users)
+    saveGenericProperty(uprn, data)
+    console.log('Saved generic property data for UPRN:', uprn)
+    
+    // Auto-select comparables based on criteria and calculate valuation
     const autoSelectedComparables: string[] = []
     let calculatedValuation = 0
     
@@ -77,43 +92,28 @@ export default function Home() {
       }
     }
     
-    // Store full property data with calculated valuation in propertyDataStore (single source of truth)
-    const propertyDataWithCalculation = {
-      ...data,
+    // Create user analysis (user-specific data)
+    const userAnalysis: UserAnalysis = {
+      uprn,
+      searchAddress,
+      searchPostcode,
+      timestamp: Date.now(),
+      selectedComparables: autoSelectedComparables,
       calculatedValuation,
       valuationBasedOnComparables: autoSelectedComparables.length,
-      lastValuationUpdate: Date.now()
-    }
-    
-    try {
-      const propertyDataStore = JSON.parse(localStorage.getItem('propertyDataStore') || '{}')
-      propertyDataStore[analysisId] = propertyDataWithCalculation
-      localStorage.setItem('propertyDataStore', JSON.stringify(propertyDataStore))
-      console.log('Saved full property data with calculated valuation to propertyDataStore')
-    } catch (e) {
-      console.error('Failed to save full property data:', e)
-      // If storage is full, remove oldest entries
-      try {
-        const propertyDataStore = JSON.parse(localStorage.getItem('propertyDataStore') || '{}')
-        const keys = Object.keys(propertyDataStore)
-        if (keys.length > 5) {
-          // Keep only the 5 most recent
-          const recentAnalyses = JSON.parse(localStorage.getItem('recentAnalyses') || '[]')
-          const recentIds = recentAnalyses.slice(0, 5).map((a: any) => a.id)
-          const cleanedStore: any = {}
-          recentIds.forEach((id: string) => {
-            if (propertyDataStore[id]) {
-              cleanedStore[id] = propertyDataStore[id]
-            }
-          })
-          cleanedStore[analysisId] = propertyDataWithCalculation
-          localStorage.setItem('propertyDataStore', JSON.stringify(cleanedStore))
-          console.log('Cleaned old property data and saved new with calculated valuation')
-        }
-      } catch (e2) {
-        console.error('Still failed after cleaning:', e2)
+      lastValuationUpdate: Date.now(),
+      filters: {
+        propertyType: '',
+        minBeds: '',
+        maxBeds: '',
+        minBaths: '',
+        maxBaths: ''
       }
     }
+    
+    // Save user analysis (this also updates recent analyses list)
+    saveUserAnalysis(analysisId, userAnalysis)
+    console.log('Saved user analysis with calculated valuation')
     
     // Create default calculator data with pre-filled values
     const defaultCalculatorData: CalculatorData = {
@@ -179,53 +179,12 @@ export default function Home() {
     saveCalculatorData(analysisId, defaultCalculatorData)
     console.log('Saved default calculator data with pre-filled purchase price:', calculatedValuation || 'No valuation calculated')
     
-    // Store only user-generated data and metadata in recentAnalyses
-    const analysis: RecentAnalysis = {
-      id: analysisId,
-      searchDate: new Date().toISOString(),
-      comparables: autoSelectedComparables,
-      filters: {
-        propertyType: '',
-        minBeds: '',
-        maxBeds: '',
-        minBaths: '',
-        maxBaths: ''
-      }
-    }
-
-    try {
-      const savedAnalyses = localStorage.getItem('recentAnalyses')
-      const analyses = savedAnalyses ? JSON.parse(savedAnalyses) : []
-      // Add to the beginning and limit to 10 most recent
-      const updated = [analysis, ...analyses].slice(0, 10)
-      localStorage.setItem('recentAnalyses', JSON.stringify(updated))
-      console.log('Saved lightweight analysis list to localStorage')
-    } catch (e) {
-      console.error('Failed to save recent analyses:', e)
-    }
-    
     return analysisId
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!address || !postcode) return
-
-    // Check if we already have this property in propertyDataStore
-    const propertyDataStore = JSON.parse(localStorage.getItem('propertyDataStore') || '{}')
-    const existingId = Object.keys(propertyDataStore).find(id => {
-      const data = propertyDataStore[id]
-      const storedAddress = data?.data?.attributes?.address?.street_group_format?.address_lines || ''
-      const storedPostcode = data?.data?.attributes?.address?.street_group_format?.postcode || ''
-      return storedAddress.toLowerCase().trim() === address.toLowerCase().trim() && 
-             storedPostcode.toLowerCase().trim() === postcode.toLowerCase().trim()
-    })
-
-    if (existingId) {
-      // Navigate to existing analysis details page
-      router.push(`/details/${existingId}`)
-      return
-    }
 
     setLoading(true)
     setErrorMessage(null)
@@ -251,6 +210,24 @@ export default function Home() {
       if (!data || !data.data || !data.data.attributes) {
         setErrorMessage('Property not found. Please check the address and postcode and try again.')
         return
+      }
+      
+      // Extract UPRN to check if we already have this property
+      const uprn = extractUPRN(data)
+      
+      if (uprn) {
+        // Check if we already have an analysis for this property (search by UPRN)
+        const userAnalysesStore = loadUserAnalysesStore()
+        const existingAnalysisId = Object.keys(userAnalysesStore).find(id => 
+          userAnalysesStore[id].uprn === uprn
+        )
+        
+        if (existingAnalysisId) {
+          console.log('Property already exists with UPRN:', uprn, 'Analysis ID:', existingAnalysisId)
+          // Navigate to existing analysis details page
+          router.push(`/details/${existingAnalysisId}`)
+          return
+        }
       }
       
       // Save to recent analyses and get the analysis ID
