@@ -324,6 +324,8 @@ interface PropertyDetailsProps {
     minBaths: string
     maxBaths: string
   }) => void
+  onNotesClick?: () => void
+  hasNotes?: boolean
 }
 
 export default function PropertyDetails({ 
@@ -339,7 +341,9 @@ export default function PropertyDetails({
     maxBaths: ''
   },
   onComparablesChange,
-  onFiltersChange
+  onFiltersChange,
+  onNotesClick,
+  hasNotes = false
 }: PropertyDetailsProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -940,6 +944,25 @@ export default function PropertyDetails({
             {taskCount > 0 ? `${taskCount}` : 'Tasks'}
           </span>
         </button>
+        {onNotesClick && (
+          <button
+            type="button"
+            onClick={onNotesClick}
+            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium border shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+              hasNotes 
+                ? 'bg-purple-700 hover:bg-purple-600 text-white border-purple-600' 
+                : 'bg-gray-800 hover:bg-gray-700 text-white border-gray-600'
+            }`}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            <span className="hidden sm:inline">
+              {hasNotes ? 'Edit Notes' : 'Add Notes'}
+            </span>
+            <span className="sm:hidden">Notes</span>
+          </button>
+        )}
       </div>
 
       {/* Overview - Main Property Info */}

@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import PropertyDetails from '../../components/PropertyDetails'
 import Header from '../../components/Header'
+import Dialog from '../../components/Dialog'
 
 interface PropertyData {
   data: {
@@ -48,6 +49,12 @@ export default function PropertyDetailsPage() {
     minBaths: '',
     maxBaths: ''
   })
+  
+  // Notes state
+  const [notes, setNotes] = useState<string>('')
+  const [isNotesDialogOpen, setIsNotesDialogOpen] = useState(false)
+  const [tempNotes, setTempNotes] = useState('')
+  const isInitialLoadRef = useRef(true)
 
   // Smart back navigation based on referrer
   const handleBackClick = () => {
@@ -65,7 +72,7 @@ export default function PropertyDetailsPage() {
   // Load property data from localStorage based on ID - NO API CALLS
   useEffect(() => {
     // Dynamic import to avoid SSR issues
-    import('../../../lib/persistence').then(({ getFullAnalysisData, loadRecentAnalyses, autoMigrate }) => {
+    import('../../../lib/persistence').then(({ getFullAnalysisData, loadRecentAnalyses, autoMigrate, loadCalculatorData }) => {
       try {
         // Run migration first
         autoMigrate()
@@ -92,6 +99,12 @@ export default function PropertyDetailsPage() {
             })
             setComparables(new Set(fullData.userAnalysis.selectedComparables))
             setFilters(fullData.userAnalysis.filters)
+            
+            // Load calculator data and extract notes
+            const calculatorData = loadCalculatorData(params.id as string)
+            if (calculatorData?.notes) {
+              setNotes(calculatorData.notes)
+            }
           } else {
             console.error('No analysis found for UID:', params.id)
             
@@ -116,6 +129,12 @@ export default function PropertyDetailsPage() {
                 })
                 setComparables(new Set(fallbackData.userAnalysis.selectedComparables))
                 setFilters(fallbackData.userAnalysis.filters)
+                
+                // Load calculator data and extract notes
+                const calculatorData = loadCalculatorData(mostRecentId)
+                if (calculatorData?.notes) {
+                  setNotes(calculatorData.notes)
+                }
               }
             }
           }
@@ -165,6 +184,40 @@ export default function PropertyDetailsPage() {
       }
     })
   }
+
+  // Notes handlers
+  const handleOpenNotesDialog = () => {
+    setTempNotes(notes)
+    setIsNotesDialogOpen(true)
+  }
+
+  const handleSaveNotes = () => {
+    setNotes(tempNotes)
+    setIsNotesDialogOpen(false)
+  }
+
+  const handleCloseNotesDialog = () => {
+    setIsNotesDialogOpen(false)
+    setTempNotes(notes)
+  }
+
+  // Save notes when they change
+  useEffect(() => {
+    if (!params.id) return
+    
+    // Skip saving on initial load
+    if (isInitialLoadRef.current) {
+      isInitialLoadRef.current = false
+      return
+    }
+
+    import('../../../lib/persistence').then(({ loadCalculatorData, saveCalculatorData }) => {
+      const currentData = loadCalculatorData(params.id as string)
+      if (currentData) {
+        saveCalculatorData(params.id as string, { ...currentData, notes })
+      }
+    })
+  }, [notes, params.id])
 
   if (loading) {
     return (
@@ -227,10 +280,46 @@ export default function PropertyDetailsPage() {
               filters={filters}
               onComparablesChange={updateComparables}
               onFiltersChange={updateFilters}
+              onNotesClick={handleOpenNotesDialog}
+              hasNotes={!!notes}
             />
           </div>
         </div>
       </div>
+
+      {/* Notes Dialog */}
+      <Dialog
+        title="Notes"
+        isOpen={isNotesDialogOpen}
+        onClose={handleCloseNotesDialog}
+        maxWidth="lg"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-400">
+            Add notes about your calculations, assumptions, or important details...
+          </p>
+          <textarea
+            value={tempNotes}
+            onChange={(e) => setTempNotes(e.target.value)}
+            placeholder="Add notes about your calculations, assumptions, or important details..."
+            className="w-full h-64 px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-colors resize-none"
+          />
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={handleCloseNotesDialog}
+              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSaveNotes}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            >
+              Save Notes
+            </button>
+          </div>
+        </div>
+      </Dialog>
     </main>
   )
 }

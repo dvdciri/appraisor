@@ -120,16 +120,20 @@ function InvestmentCalculator({ propertyId, onNotesModalOpen, notes }: {
   onNotesModalOpen: (notes: string) => void,
   notes: string
 }) {
+  // State for active tab
+  const [activeTab, setActiveTab] = useState<'purchase' | 'refurbishment' | 'funding' | 'exit' | 'kpi'>('purchase')
+  
   // State for purchase type toggle
   const [purchaseType, setPurchaseType] = useState<'mortgage' | 'cash' | 'bridging'>('mortgage')
   
   // State for fees inclusion toggle
   const [includeFeesInLoan, setIncludeFeesInLoan] = useState(false)
   
-  // State for collapsible sections
-  const [isRefurbExpanded, setIsRefurbExpanded] = useState(false)
-  const [isFundingExpanded, setIsFundingExpanded] = useState(false)
-  const [isExitStrategyExpanded, setIsExitStrategyExpanded] = useState(false)
+  // State for collapsible sections - no longer needed with tab layout
+  // const [isPurchaseExpanded, setIsPurchaseExpanded] = useState(false)
+  // const [isRefurbExpanded, setIsRefurbExpanded] = useState(false)
+  // const [isFundingExpanded, setIsFundingExpanded] = useState(false)
+  // const [isExitStrategyExpanded, setIsExitStrategyExpanded] = useState(false)
   
   // State for bridging-specific fields
   const [bridgingDetails, setBridgingDetails] = useState({
@@ -600,6 +604,23 @@ function InvestmentCalculator({ propertyId, onNotesModalOpen, notes }: {
 
   return (
     <div className="space-y-8">
+      {/* AI Refurbishment Estimator Button - Aligned to the left */}
+      <div className="flex justify-start mb-4">
+        <button
+          onClick={() => {
+            if (propertyId) {
+              window.location.href = `/analyse/${propertyId}/refurbishment`
+            }
+          }}
+          className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+          </svg>
+          AI Refurbishment Estimator
+        </button>
+      </div>
+
       {/* Notes Box - Always visible, clickable to edit */}
       <div 
         onClick={handleOpenNotesModal}
@@ -645,19 +666,82 @@ function InvestmentCalculator({ propertyId, onNotesModalOpen, notes }: {
       </div>
 
 
-      {/* Main Calculator Sections */}
-      <div className="space-y-8">
-        {/* Purchase Section */}
-        <div className="bg-gray-900 rounded-xl p-8 animate-enter-subtle">
-          <h2 className="text-3xl font-bold text-white mb-8 flex items-center gap-3">
-            <span className="text-4xl">🏠</span> Purchase Details
-          </h2>
-          
+      {/* Tab Navigation */}
+      <div className="bg-gray-900 rounded-xl p-2">
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setActiveTab('purchase')}
+            className={`flex items-center gap-2 px-4 py-3 rounded-lg font-semibold transition-all ${
+              activeTab === 'purchase'
+                ? 'bg-blue-600 text-white shadow-lg'
+                : 'text-gray-400 hover:text-white hover:bg-gray-800'
+            }`}
+          >
+            <span className="text-xl">🏠</span>
+            <span>Purchase</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('refurbishment')}
+            className={`flex items-center gap-2 px-4 py-3 rounded-lg font-semibold transition-all ${
+              activeTab === 'refurbishment'
+                ? 'bg-blue-600 text-white shadow-lg'
+                : 'text-gray-400 hover:text-white hover:bg-gray-800'
+            }`}
+          >
+            <span className="text-xl">🔨</span>
+            <span>Refurbishment</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('funding')}
+            className={`flex items-center gap-2 px-4 py-3 rounded-lg font-semibold transition-all ${
+              activeTab === 'funding'
+                ? 'bg-blue-600 text-white shadow-lg'
+                : 'text-gray-400 hover:text-white hover:bg-gray-800'
+            }`}
+          >
+            <span className="text-xl">📊</span>
+            <span>Funding</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('exit')}
+            className={`flex items-center gap-2 px-4 py-3 rounded-lg font-semibold transition-all ${
+              activeTab === 'exit'
+                ? 'bg-blue-600 text-white shadow-lg'
+                : 'text-gray-400 hover:text-white hover:bg-gray-800'
+            }`}
+          >
+            <span className="text-xl">🚪</span>
+            <span>Exit Strategy</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('kpi')}
+            className={`flex items-center gap-2 px-4 py-3 rounded-lg font-semibold transition-all ${
+              activeTab === 'kpi'
+                ? 'bg-blue-600 text-white shadow-lg'
+                : 'text-gray-400 hover:text-white hover:bg-gray-800'
+            }`}
+          >
+            <span className="text-xl">📊</span>
+            <span>KPIs</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Tab Content */}
+      <div className="bg-gray-900 rounded-xl p-8 animate-enter-subtle min-h-[600px]">
+        {/* Purchase Tab */}
+        {activeTab === 'purchase' && (
+          <div>
+            <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+              <span className="text-2xl">🏠</span> Purchase Details
+            </h2>
+        
+        <>
         {/* Initial Expenses & Purchase Finance - Side by Side */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
           {/* Initial Expenses */}
           <div className="bg-gray-800 rounded-xl p-8">
-            <h3 className="text-2xl font-bold text-white mb-6">
+            <h3 className="text-lg font-semibold text-white mb-6">
               Costs
             </h3>
             <div className="space-y-4">
@@ -785,7 +869,7 @@ function InvestmentCalculator({ propertyId, onNotesModalOpen, notes }: {
           {/* Purchase Finance */}
           <div className="bg-gray-800 rounded-xl p-8">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-bold text-white">
+              <h3 className="text-lg font-semibold text-white">
                 Finance
               </h3>
               {/* Purchase Type Selection */}
@@ -1128,34 +1212,28 @@ function InvestmentCalculator({ propertyId, onNotesModalOpen, notes }: {
             </div>
           </div>
           </div>
-        </div>
+        </>
+          </div>
+        )}
 
-        {/* Refurbishment Section - only show when amount needed to purchase > 0 */}
-        {amountNeededToPurchase > 0 ? (
-        <div className="bg-gray-900 rounded-xl p-8 animate-enter-subtle-delayed">
-          <div 
-            className={`flex justify-between items-center cursor-pointer ${isRefurbExpanded ? 'mb-8' : ''}`}
-            onClick={() => setIsRefurbExpanded(!isRefurbExpanded)}
-          >
-            <h2 className="text-3xl font-bold text-white flex items-center gap-3">
-              <span className="text-4xl">🔨</span> Refurbishment
-              <span className="text-2xl text-gray-400">{isRefurbExpanded ? '▼' : '▶'}</span>
-            </h2>
-            {isRefurbExpanded && (
+        {/* Refurbishment Tab */}
+        {activeTab === 'refurbishment' && (
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <span className="text-2xl">🔨</span> Refurbishment
+              </h2>
               <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  addRefurbItem()
-                }}
+                onClick={addRefurbItem}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors"
               >
                 + Add Item
               </button>
-            )}
-          </div>
-          
-          {isRefurbExpanded && (
-          <>
+            </div>
+            
+            {amountNeededToPurchase > 0 ? (
+              <div>
+        <>
             <div className="space-y-4">
               {refurbItems.map((item, index) => (
                 <div key={item.id} className="bg-gray-800 rounded-lg p-4">
@@ -1205,38 +1283,28 @@ function InvestmentCalculator({ propertyId, onNotesModalOpen, notes }: {
               </div>
             </div>
           </>
-          )}
-        
-        </div>
-        ) : (
-        <div className="bg-gray-900/30 rounded-xl p-8 opacity-50 border-2 border-dashed border-gray-600">
-          <div className="flex justify-between items-center mb-8">
-            <h2 className="text-3xl font-bold text-white flex items-center gap-3">
-              <span className="text-4xl">🔨</span> Refurbishment
-            </h2>
+              </div>
+            ) : (
+              <div className="text-center py-16">
+                <p className="text-gray-400 text-lg">Enter purchase details in the Purchase tab to unlock refurbishment planning</p>
+              </div>
+            )}
           </div>
-          <div className="text-center py-8">
-            <p className="text-gray-400 text-lg">Enter purchase details above to unlock refurbishment planning</p>
-          </div>
-        </div>
         )}
 
-        {/* Total Project Costs & Source of Funds Section - only show when amount needed to purchase > 0 */}
-        {amountNeededToPurchase > 0 ? (
-        <div className="bg-gray-900 rounded-xl p-8 animate-enter-subtle-delayed-2">
-          <h2 
-            className={`text-3xl font-bold text-white flex items-center gap-3 cursor-pointer ${isFundingExpanded ? 'mb-8' : ''}`}
-            onClick={() => setIsFundingExpanded(!isFundingExpanded)}
-          >
-            <span className="text-4xl">📊</span> Project Funding
-            <span className="text-2xl text-gray-400">{isFundingExpanded ? '▼' : '▶'}</span>
-          </h2>
-          
-          {isFundingExpanded && (
+        {/* Funding Tab */}
+        {activeTab === 'funding' && (
+          <div>
+            <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+              <span className="text-2xl">📊</span> Project Funding
+            </h2>
+            
+            {amountNeededToPurchase > 0 ? (
+              <div>
           <div className="grid grid-cols-1 xl:grid-cols-5 gap-8">
             {/* Left Side - Total Project Costs */}
             <div className="bg-gray-800 rounded-xl p-8 xl:col-span-2">
-              <h3 className="text-2xl font-bold text-white mb-6">
+              <h3 className="text-lg font-semibold text-white mb-6">
                 Total Project Costs
               </h3>
               <div className="space-y-6">
@@ -1269,7 +1337,7 @@ function InvestmentCalculator({ propertyId, onNotesModalOpen, notes }: {
             {/* Right Side - Source of Funds */}
             <div className="bg-gray-800 rounded-xl p-8 xl:col-span-3">
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-2xl font-bold text-white">
+                <h3 className="text-lg font-semibold text-white">
                   Source of Funds
                 </h3>
                 <button
@@ -1383,41 +1451,27 @@ function InvestmentCalculator({ propertyId, onNotesModalOpen, notes }: {
               </div>
             </div>
           </div>
-          )}
-        </div>
-        ) : (
-        <div className="bg-gray-900/30 rounded-xl p-8 opacity-50 border-2 border-dashed border-gray-600">
-          <h2 className="text-3xl font-bold text-white mb-8 flex items-center gap-3">
-            <span className="text-4xl">📊</span> Project Funding
-          </h2>
-          <div className="text-center py-8">
-            <p className="text-gray-400 text-lg">Enter purchase details above to unlock project funding tools</p>
+              </div>
+            ) : (
+              <div className="text-center py-16">
+                <p className="text-gray-400 text-lg">Enter purchase details in the Purchase tab to unlock project funding tools</p>
+              </div>
+            )}
           </div>
-        </div>
         )}
 
-        {/* Exit Strategy Section - only show when amount needed to purchase > 0 */}
-        {amountNeededToPurchase > 0 ? (
-        <div className="bg-gray-900 rounded-xl p-8 animate-enter-subtle-delayed-3">
-          <h2 
-            className={`text-3xl font-bold text-white flex items-center gap-3 cursor-pointer ${isExitStrategyExpanded ? 'mb-8' : ''}`}
-            onClick={() => setIsExitStrategyExpanded(!isExitStrategyExpanded)}
-          >
-            <span className="text-4xl">🚪</span> Exit Strategy
-            <span className="text-2xl text-gray-400">{isExitStrategyExpanded ? '▼' : '▶'}</span>
-          </h2>
-          {isExitStrategyExpanded && (
+        {/* Exit Strategy Tab */}
+        {activeTab === 'exit' && (
+          <div>
+            <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+              <span className="text-2xl">🚪</span> Exit Strategy
+            </h2>
+            
+            {amountNeededToPurchase > 0 ? (
+              <div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <button
-              onClick={() => {
-                setExitStrategy('just-rent')
-                setTimeout(() => {
-                  document.getElementById('calculator-content')?.scrollIntoView({ 
-                    behavior: 'smooth',
-                    block: 'start'
-                  })
-                }, 100)
-              }}
+              onClick={() => setExitStrategy('just-rent')}
               className={`p-6 rounded-xl border-2 transition-all ${
                 exitStrategy === 'just-rent'
                   ? 'border-blue-500 bg-blue-500/10'
@@ -1430,15 +1484,7 @@ function InvestmentCalculator({ propertyId, onNotesModalOpen, notes }: {
             </button>
             
             <button
-              onClick={() => {
-                setExitStrategy('refinance-rent')
-                setTimeout(() => {
-                  document.getElementById('calculator-content')?.scrollIntoView({ 
-                    behavior: 'smooth',
-                    block: 'start'
-                  })
-                }, 100)
-              }}
+              onClick={() => setExitStrategy('refinance-rent')}
               className={`p-6 rounded-xl border-2 transition-all ${
                 exitStrategy === 'refinance-rent'
                   ? 'border-blue-500 bg-blue-500/10'
@@ -1451,15 +1497,7 @@ function InvestmentCalculator({ propertyId, onNotesModalOpen, notes }: {
             </button>
             
             <button
-              onClick={() => {
-                setExitStrategy('flip-sell')
-                setTimeout(() => {
-                  document.getElementById('calculator-content')?.scrollIntoView({ 
-                    behavior: 'smooth',
-                    block: 'start'
-                  })
-                }, 100)
-              }}
+              onClick={() => setExitStrategy('flip-sell')}
               className={`p-6 rounded-xl border-2 transition-all ${
                 exitStrategy === 'flip-sell'
                   ? 'border-blue-500 bg-blue-500/10'
@@ -1471,35 +1509,33 @@ function InvestmentCalculator({ propertyId, onNotesModalOpen, notes }: {
               <p className="text-gray-400 text-sm">Sell the property for profit</p>
             </button>
           </div>
-          )}
-        </div>
-        ) : (
-        <div className="bg-gray-900/30 rounded-xl p-8 opacity-50 border-2 border-dashed border-gray-600">
-          <h2 className="text-3xl font-bold text-white mb-8 flex items-center gap-3">
-            <span className="text-4xl">🚪</span> Exit Strategy
-          </h2>
-          <div className="text-center py-8">
-            <p className="text-gray-400 text-lg">Enter purchase details above to unlock exit strategy options</p>
-          </div>
-        </div>
-        )}
-
-        {/* Rest of calculator - only show if exit strategy is selected and expanded */}
-        {exitStrategy && isExitStrategyExpanded && (
-          <div id="calculator-content">
+              </div>
+            ) : (
+              <div className="text-center py-16">
+                <p className="text-gray-400 text-lg">Enter purchase details in the Purchase tab to unlock exit strategy options</p>
+              </div>
+            )}
+            
+            {/* Results - Show when exit strategy is selected */}
+            {exitStrategy && amountNeededToPurchase > 0 && (
+              <div className="mt-8">
+                <h3 className="text-lg font-bold text-white mb-6">
+                  Results & Analysis
+                </h3>
+            
             {/* Refinance Section - only show for refinance-rent */}
             {exitStrategy === 'refinance-rent' && (
-              <div className="bg-gray-900 rounded-xl p-8 mb-8 animate-enter-subtle-delayed">
-                <h2 className="text-3xl font-bold text-white mb-8 flex items-center gap-3">
-                  <span className="text-4xl">🔄</span> Refinance
-                </h2>
+              <div className="mb-8">
+                <h3 className="text-lg font-bold text-white mb-6">
+                  Refinance Details
+                </h3>
 
     
                   <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
                     {/* Left Side - New Finance */}
                     <div className="flex">
                       <div className="bg-gray-800 rounded-xl p-6 w-full flex flex-col">
-                        <h3 className="text-xl font-bold text-white mb-4">
+                        <h3 className="text-base font-semibold text-white mb-4">
                           Refinance Details
                         </h3>
                       <div className="space-y-4 flex-1">
@@ -1575,7 +1611,7 @@ function InvestmentCalculator({ propertyId, onNotesModalOpen, notes }: {
                     {/* Right Side - Refinance Costs */}
                     <div className="flex">
                       <div className="bg-gray-800 rounded-xl p-6 w-full flex flex-col">
-                        <h3 className="text-xl font-bold text-white mb-4">
+                        <h3 className="text-base font-semibold text-white mb-4">
                           Costs
                         </h3>
                       <div className="space-y-4 flex-1">
@@ -1617,7 +1653,7 @@ function InvestmentCalculator({ propertyId, onNotesModalOpen, notes }: {
                   {/* Money Left in the Deal */}
                   <div className="mt-8 bg-gray-800 border-2 border-blue-500 rounded-xl p-8">
                   <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-2xl font-bold text-white">
+                    <h3 className="text-lg font-semibold text-white">
                       Refinance Summary
                     </h3>
                     <div className="text-right">
@@ -1665,16 +1701,16 @@ function InvestmentCalculator({ propertyId, onNotesModalOpen, notes }: {
             
             {/* Sale Section - only show for flip-sell */}
             {exitStrategy === 'flip-sell' && (
-              <div className="bg-gray-900 rounded-xl p-8 mb-8 animate-enter-subtle-delayed">
-                <h2 className="text-3xl font-bold text-white mb-8 flex items-center gap-3">
-                  <span className="text-4xl">💰</span> Sale
-                </h2>
+              <div className="mb-8">
+                <h3 className="text-lg font-bold text-white mb-6">
+                  Sale Details
+                </h3>
 
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
                   {/* Left Side - Sale Details */}
                   <div className="flex">
                     <div className="bg-gray-800 rounded-xl p-6 w-full flex flex-col">
-                      <h3 className="text-xl font-bold text-white mb-4">
+                      <h3 className="text-base font-semibold text-white mb-4">
                         Sale Details
                       </h3>
                     <div className="space-y-4 flex-1">
@@ -1698,7 +1734,7 @@ function InvestmentCalculator({ propertyId, onNotesModalOpen, notes }: {
                   {/* Right Side - Sale Costs */}
                   <div className="flex">
                     <div className="bg-gray-800 rounded-xl p-6 w-full flex flex-col">
-                      <h3 className="text-xl font-bold text-white mb-4">
+                      <h3 className="text-base font-semibold text-white mb-4">
                         Sale Costs
                       </h3>
                     <div className="space-y-4 flex-1">
@@ -1760,7 +1796,7 @@ function InvestmentCalculator({ propertyId, onNotesModalOpen, notes }: {
                 {/* Total Profit/Loss */}
                 <div className="mt-8 bg-gray-800 border-2 border-blue-500 rounded-xl p-8">
                 <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-2xl font-bold text-white">
+                  <h3 className="text-lg font-semibold text-white">
                     Total Profit/Loss
                   </h3>
                   <span className={`text-4xl font-bold ${totalProfitLoss >= 0 ? 'text-green-400' : 'text-red-400'}`}>
@@ -1802,16 +1838,16 @@ function InvestmentCalculator({ propertyId, onNotesModalOpen, notes }: {
             
             {/* Rent Section - Hide for Sell exit strategy */}
             {exitStrategy !== 'flip-sell' && (
-              <div className="bg-gray-900 rounded-xl p-8 animate-enter-subtle-delayed-2">
-                <h2 className="text-3xl font-bold text-white mb-8 flex items-center gap-3">
-                  <span className="text-4xl">🏠</span> Rent
-                </h2>
+              <div className="mb-8">
+                <h3 className="text-lg font-bold text-white mb-6">
+                  Rental Income & Expenses
+                </h3>
                 
                 {/* Monthly Income & Expenses - Side by Side */}
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
                   {/* Monthly Income */}
                   <div className="bg-gray-800 rounded-xl p-8">
-                    <h3 className="text-2xl font-bold text-white mb-6">
+                    <h3 className="text-lg font-semibold text-white mb-6">
                       Monthly Income
                     </h3>
             <div className="space-y-6">
@@ -1890,7 +1926,7 @@ function InvestmentCalculator({ propertyId, onNotesModalOpen, notes }: {
 
                   {/* Monthly Expenses */}
                   <div className="bg-gray-800 rounded-xl p-8">
-                    <h3 className="text-2xl font-bold text-white mb-6">
+                    <h3 className="text-lg font-semibold text-white mb-6">
                       Monthly Expenses
                     </h3>
             <div className="space-y-6">
@@ -2025,33 +2061,48 @@ function InvestmentCalculator({ propertyId, onNotesModalOpen, notes }: {
                   </div>
                 </div>
                 
-                {/* Key Performance Indicators - Full Width */}
-                <div className="bg-gray-800 rounded-xl p-8 mt-8 animate-enter-subtle-delayed-3">
-                  <h3 className="text-2xl font-bold text-white mb-6">
-                    Key Performance Indicators
-                  </h3>
-                  {/* Standard KPIs for Rent and Refinance exit strategies */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div className="bg-gradient-to-br from-green-600 to-green-700 rounded-xl p-6 text-white animate-enter-subtle-delayed">
-                      <div className="text-sm opacity-90 mb-2">Net Monthly Income</div>
-                      <div className="text-3xl font-bold">£{netMonthlyIncome.toLocaleString()}</div>
-                    </div>
-                    <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl p-6 text-white animate-enter-subtle-delayed-2">
-                      <div className="text-sm opacity-90 mb-2">Net Yearly Income</div>
-                      <div className="text-3xl font-bold">£{netYearlyIncome.toLocaleString()}</div>
-                    </div>
-                    <div className="bg-gradient-to-br from-purple-600 to-purple-700 rounded-xl p-6 text-white animate-enter-subtle-delayed-3">
-                      <div className="text-sm opacity-90 mb-2">ROCE</div>
-                      <div className="text-3xl font-bold">
-                        {roce === Infinity ? '∞' : `${roce.toFixed(2)}%`}
-                      </div>
-                    </div>
-                    <div className="bg-gradient-to-br from-orange-600 to-orange-700 rounded-xl p-6 text-white animate-enter-subtle-delayed">
-                      <div className="text-sm opacity-90 mb-2">Annual Yield</div>
-                      <div className="text-3xl font-bold">{annualYield.toFixed(2)}%</div>
-                    </div>
+              </div>
+            )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* KPI Tab */}
+        {activeTab === 'kpi' && (
+          <div>
+            <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+              <span className="text-2xl">📊</span> Key Performance Indicators
+            </h2>
+            
+            {exitStrategy && exitStrategy !== 'flip-sell' ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="bg-gradient-to-br from-green-600 to-green-700 rounded-xl p-6 text-white animate-enter-subtle-delayed">
+                  <div className="text-sm opacity-90 mb-2">Net Monthly Income</div>
+                  <div className="text-3xl font-bold">£{netMonthlyIncome.toLocaleString()}</div>
+                </div>
+                <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl p-6 text-white animate-enter-subtle-delayed-2">
+                  <div className="text-sm opacity-90 mb-2">Net Yearly Income</div>
+                  <div className="text-3xl font-bold">£{netYearlyIncome.toLocaleString()}</div>
+                </div>
+                <div className="bg-gradient-to-br from-purple-600 to-purple-700 rounded-xl p-6 text-white animate-enter-subtle-delayed-3">
+                  <div className="text-sm opacity-90 mb-2">ROCE</div>
+                  <div className="text-3xl font-bold">
+                    {roce === Infinity ? '∞' : `${roce.toFixed(2)}%`}
                   </div>
                 </div>
+                <div className="bg-gradient-to-br from-orange-600 to-orange-700 rounded-xl p-6 text-white animate-enter-subtle-delayed">
+                  <div className="text-sm opacity-90 mb-2">Annual Yield</div>
+                  <div className="text-3xl font-bold">{annualYield.toFixed(2)}%</div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-16">
+                <p className="text-gray-400 text-lg">
+                  {!exitStrategy 
+                    ? 'Please select an exit strategy in the Exit Strategy tab to view KPIs' 
+                    : 'KPIs are not available for the Sell exit strategy'}
+                </p>
               </div>
             )}
           </div>

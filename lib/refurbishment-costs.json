@@ -1,0 +1,263 @@
+{
+  "items": [
+    {
+      "category": "Kitchen",
+      "items": [
+        {
+          "name": "Kitchen Installation - Basic",
+          "cost_basic": 3,
+          "cost_standard": 8,
+          "cost_premium": 20,
+          "unit": "per kitchen",
+          "description": "Complete kitchen installation including units, worktop, sink"
+        },
+        {
+          "name": "Kitchen Appliances - Basic",
+          "cost_basic": 1,
+          "cost_standard": 2,
+          "cost_premium": 5,
+          "unit": "per set",
+          "description": "Oven, hob, extractor, fridge freezer"
+        }
+      ]
+    },
+    {
+      "category": "Bathroom",
+      "items": [
+        {
+          "name": "Bathroom Suite - Basic",
+          "cost_basic": 2,
+          "cost_standard": 4,
+          "cost_premium": 8,
+          "unit": "per bathroom",
+          "description": "Basin, toilet, bath/shower, tiling"
+        },
+        {
+          "name": "En-suite Installation",
+          "cost_basic": 2,
+          "cost_standard": 5,
+          "cost_premium": 10,
+          "unit": "per en-suite",
+          "description": "Compact bathroom suite for bedroom"
+        }
+      ]
+    },
+    {
+      "category": "Flooring",
+      "items": [
+        {
+          "name": "Carpet",
+          "cost_basic": 0.15,
+          "cost_standard": 0.25,
+          "cost_premium": 0.50,
+          "unit": "per sqm",
+          "description": "Carpet and underlay installation"
+        },
+        {
+          "name": "Laminate Flooring",
+          "cost_basic": 0.20,
+          "cost_standard": 0.35,
+          "cost_premium": 0.60,
+          "unit": "per sqm",
+          "description": "Laminate or vinyl flooring"
+        },
+        {
+          "name": "Hardwood Flooring",
+          "cost_basic": 0.40,
+          "cost_standard": 0.70,
+          "cost_premium": 1.20,
+          "unit": "per sqm",
+          "description": "Engineered or solid wood flooring"
+        }
+      ]
+    },
+    {
+      "category": "Walls & Ceilings",
+      "items": [
+        {
+          "name": "Plastering",
+          "cost_basic": 0.15,
+          "cost_standard": 0.20,
+          "cost_premium": 0.30,
+          "unit": "per sqm",
+          "description": "Plaster skim or full re-plaster"
+        },
+        {
+          "name": "Painting & Decorating",
+          "cost_basic": 0.08,
+          "cost_standard": 0.12,
+          "cost_premium": 0.20,
+          "unit": "per sqm",
+          "description": "Professional painting service"
+        },
+        {
+          "name": "Wallpaper",
+          "cost_basic": 0.15,
+          "cost_standard": 0.25,
+          "cost_premium": 0.50,
+          "unit": "per sqm",
+          "description": "Wallpaper supply and hanging"
+        }
+      ]
+    },
+    {
+      "category": "Electrical",
+      "items": [
+        {
+          "name": "Rewire - Full House",
+          "cost_basic": 3,
+          "cost_standard": 5,
+          "cost_premium": 7,
+          "unit": "per property",
+          "description": "Complete electrical rewiring"
+        },
+        {
+          "name": "Consumer Unit Replacement",
+          "cost_basic": 0.5,
+          "cost_standard": 0.8,
+          "cost_premium": 1.2,
+          "unit": "per unit",
+          "description": "New fuse box installation"
+        },
+        {
+          "name": "Additional Sockets/Switches",
+          "cost_basic": 0.08,
+          "cost_standard": 0.12,
+          "cost_premium": 0.20,
+          "unit": "per item",
+          "description": "New electrical points"
+        },
+        {
+          "name": "Light Fittings",
+          "cost_basic": 0.05,
+          "cost_standard": 0.15,
+          "cost_premium": 0.40,
+          "unit": "per fitting",
+          "description": "Supply and fit light fixtures"
+        }
+      ]
+    },
+    {
+      "category": "Plumbing & Heating",
+      "items": [
+        {
+          "name": "Boiler Replacement",
+          "cost_basic": 2,
+          "cost_standard": 3,
+          "cost_premium": 5,
+          "unit": "per boiler",
+          "description": "New combi boiler installation"
+        },
+        {
+          "name": "Central Heating System",
+          "cost_basic": 3,
+          "cost_standard": 5,
+          "cost_premium": 7,
+          "unit": "per property",
+          "description": "Radiators and pipework"
+        },
+        {
+          "name": "Radiator",
+          "cost_basic": 0.15,
+          "cost_standard": 0.30,
+          "cost_premium": 0.60,
+          "unit": "per radiator",
+          "description": "Supply and fit radiator"
+        }
+      ]
+    },
+    {
+      "category": "Windows & Doors",
+      "items": [
+        {
+          "name": "UPVC Windows",
+          "cost_basic": 0.4,
+          "cost_standard": 0.6,
+          "cost_premium": 1.0,
+          "unit": "per window",
+          "description": "Double glazed UPVC window"
+        },
+        {
+          "name": "Internal Doors",
+          "cost_basic": 0.15,
+          "cost_standard": 0.30,
+          "cost_premium": 0.60,
+          "unit": "per door",
+          "description": "Door and frame supplied and fitted"
+        },
+        {
+          "name": "External Doors",
+          "cost_basic": 0.6,
+          "cost_standard": 1.2,
+          "cost_premium": 2.5,
+          "unit": "per door",
+          "description": "Front/back door with frame"
+        }
+      ]
+    },
+    {
+      "category": "External",
+      "items": [
+        {
+          "name": "Roof Repairs",
+          "cost_basic": 2,
+          "cost_standard": 5,
+          "cost_premium": 12,
+          "unit": "per property",
+          "description": "Roof repairs or re-roofing"
+        },
+        {
+          "name": "Fascia & Soffits",
+          "cost_basic": 1.5,
+          "cost_standard": 2.5,
+          "cost_premium": 4,
+          "unit": "per property",
+          "description": "UPVC fascia, soffit and guttering"
+        },
+        {
+          "name": "Rendering",
+          "cost_basic": 0.40,
+          "cost_standard": 0.60,
+          "cost_premium": 1.00,
+          "unit": "per sqm",
+          "description": "External wall rendering"
+        },
+        {
+          "name": "Driveway",
+          "cost_basic": 3,
+          "cost_standard": 6,
+          "cost_premium": 15,
+          "unit": "per driveway",
+          "description": "Block paving or tarmac driveway"
+        }
+      ]
+    },
+    {
+      "category": "General",
+      "items": [
+        {
+          "name": "Skip Hire & Waste Removal",
+          "cost_basic": 0.3,
+          "cost_standard": 0.5,
+          "cost_premium": 0.8,
+          "unit": "per property",
+          "description": "Waste disposal during refurb"
+        },
+        {
+          "name": "Scaffolding",
+          "cost_basic": 0.8,
+          "cost_standard": 1.2,
+          "cost_premium": 2,
+          "unit": "per property",
+          "description": "Scaffolding hire for duration"
+        }
+      ]
+    }
+  ],
+  "notes": {
+    "basic": "Essential repairs and basic finishes suitable for rental properties. Focus on functionality and compliance.",
+    "standard": "Quality finishes with modern amenities. Good rental appeal and mid-market appeal.",
+    "premium": "Premium materials and high-end finishes. Suitable for high-end rental or sale market."
+  }
+}
+
