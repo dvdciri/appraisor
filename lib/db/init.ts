@@ -1,14 +1,66 @@
-import fs from 'fs'
-import path from 'path'
 import { query } from './client'
 
 export async function initializeDatabase(): Promise<void> {
   try {
     console.log('Initializing database...')
     
-    // Read and execute schema file
-    const schemaPath = path.join(__dirname, 'schema.sql')
-    const schema = fs.readFileSync(schemaPath, 'utf8')
+    // Embedded schema to avoid file system issues in production
+    const schema = `
+CREATE TABLE IF NOT EXISTS properties (
+    uprn VARCHAR(255) PRIMARY KEY,
+    data JSONB NOT NULL,
+    last_fetched BIGINT NOT NULL,
+    fetched_count INT DEFAULT 1,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS user_analyses (
+    analysis_id VARCHAR(255) PRIMARY KEY,
+    uprn VARCHAR(255) NOT NULL REFERENCES properties(uprn) ON DELETE CASCADE,
+    search_address TEXT,
+    search_postcode VARCHAR(20),
+    timestamp BIGINT NOT NULL,
+    selected_comparables JSONB DEFAULT '[]'::jsonb,
+    calculated_valuation NUMERIC,
+    valuation_based_on_comparables INT,
+    last_valuation_update BIGINT,
+    calculated_rent NUMERIC,
+    rent_based_on_comparables INT,
+    last_rent_update BIGINT,
+    calculated_yield NUMERIC,
+    last_yield_update BIGINT,
+    filters JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS calculator_data (
+    analysis_id VARCHAR(255) PRIMARY KEY REFERENCES user_analyses(analysis_id) ON DELETE CASCADE,
+    data JSONB NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS recent_analyses (
+    analysis_id VARCHAR(255) PRIMARY KEY REFERENCES user_analyses(analysis_id) ON DELETE CASCADE,
+    timestamp BIGINT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Add user_id column to tables for future multi-user support
+ALTER TABLE properties ADD COLUMN IF NOT EXISTS user_id VARCHAR(255);
+ALTER TABLE user_analyses ADD COLUMN IF NOT EXISTS user_id VARCHAR(255);
+ALTER TABLE calculator_data ADD COLUMN IF NOT EXISTS user_id VARCHAR(255);
+ALTER TABLE recent_analyses ADD COLUMN IF NOT EXISTS user_id VARCHAR(255);
+
+-- Create indexes for faster lookups
+CREATE INDEX IF NOT EXISTS idx_properties_uprn ON properties(uprn);
+CREATE INDEX IF NOT EXISTS idx_user_analyses_uprn ON user_analyses(uprn);
+CREATE INDEX IF NOT EXISTS idx_user_analyses_timestamp ON user_analyses(timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_recent_analyses_timestamp ON recent_analyses(timestamp DESC);
+    `
     
     // Split schema into individual statements and execute them
     const statements = schema
