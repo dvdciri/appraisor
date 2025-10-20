@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Header from './components/Header'
 import Toast from './components/Toast'
 import AddressAutocomplete from './components/AddressAutocomplete'
 import { 
@@ -241,37 +240,36 @@ export default function Home() {
         />
       )}
       
-      <Header />
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-
-          <div className="space-y-6">
-              {/* Search Form */}
-              <div className="bg-bg-elevated border border-border rounded-lg p-8 animate-enter-subtle">
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div>
-                    <label htmlFor="address" className="block text-sm font-medium text-fg-primary mb-2">
-                      Property Address
-                    </label>
-                    <AddressAutocomplete
-                      onAddressSelect={handleAddressSelect}
-                      onChange={handleAddressChange}
-                      value={fullAddress}
-                      placeholder="Enter property address"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full bg-accent text-accent-fg hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed font-medium py-3 px-6 rounded-lg transition-opacity duration-200 focus:outline-none focus:shadow-focus"
-                  >
-                    {loading ? 'Finding Property...' : 'Find Property'}
-                  </button>
-                </form>
-              </div>
-
-
+      <div className="min-h-screen flex items-center justify-center px-4 py-8">
+        <div className="w-full max-w-2xl">
+          {/* Search Form */}
+          <div className="bg-bg-elevated border border-border rounded-lg p-8 animate-enter-subtle">
+            <div className="text-center mb-8">
+              <h1 className="text-3xl font-bold text-fg-primary mb-2">Property Analysis</h1>
+              <p className="text-fg-muted">Enter a UK property address to get started</p>
             </div>
+            
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label htmlFor="address" className="block text-sm font-medium text-fg-primary mb-2">
+                  Property Address
+                </label>
+                <AddressAutocomplete
+                  onAddressSelect={handleAddressSelect}
+                  onChange={handleAddressChange}
+                  value={fullAddress}
+                  placeholder="Enter property address"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-accent text-accent-fg hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed font-medium py-3 px-6 rounded-lg transition-opacity duration-200 focus:outline-none focus:shadow-focus"
+              >
+                {loading ? 'Finding Property...' : 'Find Property'}
+              </button>
+            </form>
+          </div>
         </div>
       </div>
     </main>
