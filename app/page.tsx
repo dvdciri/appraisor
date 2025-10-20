@@ -239,6 +239,17 @@ export default function Home() {
           onClose={() => setSuccessMessage(null)}
         />
       )}
+
+      {/* Full page loading spinner */}
+      {loading && (
+        <div className="fixed inset-0 bg-bg-app bg-opacity-95 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-bg-subtle border-t-accent mx-auto mb-4"></div>
+            <h2 className="text-xl font-semibold text-fg-primary mb-2">Finding Property</h2>
+            <p className="text-fg-muted">Please wait while we search for your property...</p>
+          </div>
+        </div>
+      )}
       
       <div className="min-h-screen flex items-center justify-center px-4 py-8">
         <div className="w-full max-w-2xl">
@@ -266,7 +277,7 @@ export default function Home() {
                 disabled={loading}
                 className="w-full bg-accent text-accent-fg hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed font-medium py-3 px-6 rounded-lg transition-opacity duration-200 focus:outline-none focus:shadow-focus"
               >
-                {loading ? 'Finding Property...' : 'Find Property'}
+                Find Property
               </button>
             </form>
           </div>
