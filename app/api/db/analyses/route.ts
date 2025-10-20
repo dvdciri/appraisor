@@ -17,7 +17,10 @@ export async function GET(request: NextRequest) {
         LIMIT 50
       `)
 
-      return NextResponse.json(result.rows)
+      return NextResponse.json(result.rows.map((row: any) => ({
+        analysis_id: row.analysis_id,
+        timestamp: parseInt(row.timestamp)
+      })))
     }
 
     if (analysisId) {
@@ -55,17 +58,7 @@ export async function GET(request: NextRequest) {
         uprn: analysis.uprn,
         searchAddress: analysis.search_address,
         searchPostcode: analysis.search_postcode,
-        timestamp: analysis.timestamp,
-        selectedComparables: analysis.selected_comparables || [],
-        calculatedValuation: analysis.calculated_valuation,
-        valuationBasedOnComparables: analysis.valuation_based_on_comparables,
-        lastValuationUpdate: analysis.last_valuation_update,
-        calculatedRent: analysis.calculated_rent,
-        rentBasedOnComparables: analysis.rent_based_on_comparables,
-        lastRentUpdate: analysis.last_rent_update,
-        calculatedYield: analysis.calculated_yield,
-        lastYieldUpdate: analysis.last_yield_update,
-        filters: analysis.filters || {}
+        timestamp: analysis.timestamp
       })
     }
 
@@ -90,18 +83,9 @@ export async function POST(request: NextRequest) {
       uprn,
       searchAddress,
       searchPostcode,
-      timestamp,
-      selectedComparables,
-      calculatedValuation,
-      valuationBasedOnComparables,
-      lastValuationUpdate,
-      calculatedRent,
-      rentBasedOnComparables,
-      lastRentUpdate,
-      calculatedYield,
-      lastYieldUpdate,
-      filters
+      timestamp
     } = await request.json()
+
 
     if (!analysisId || !uprn) {
       return NextResponse.json(
@@ -111,35 +95,29 @@ export async function POST(request: NextRequest) {
     }
 
     await withTransaction(async (client) => {
+      try {
+        // First, ensure the property exists (create a dummy entry if needed)
+        await client.query(`
+          INSERT INTO properties (uprn, data, last_fetched, fetched_count)
+          VALUES ($1, '{}', $2, 1)
+          ON CONFLICT (uprn) DO NOTHING
+        `, [uprn, Date.now()])
+        
+
       // Insert or update user analysis
+      
       await client.query(`
         INSERT INTO user_analyses (
-          analysis_id, uprn, search_address, search_postcode, timestamp,
-          selected_comparables, calculated_valuation, valuation_based_on_comparables,
-          last_valuation_update, calculated_rent, rent_based_on_comparables,
-          last_rent_update, calculated_yield, last_yield_update, filters, updated_at
+          analysis_id, uprn, search_address, search_postcode, timestamp
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW())
+        VALUES ($1, $2, $3, $4, $5)
         ON CONFLICT (analysis_id) 
         DO UPDATE SET 
           search_address = EXCLUDED.search_address,
           search_postcode = EXCLUDED.search_postcode,
-          selected_comparables = EXCLUDED.selected_comparables,
-          calculated_valuation = EXCLUDED.calculated_valuation,
-          valuation_based_on_comparables = EXCLUDED.valuation_based_on_comparables,
-          last_valuation_update = EXCLUDED.last_valuation_update,
-          calculated_rent = EXCLUDED.calculated_rent,
-          rent_based_on_comparables = EXCLUDED.rent_based_on_comparables,
-          last_rent_update = EXCLUDED.last_rent_update,
-          calculated_yield = EXCLUDED.calculated_yield,
-          last_yield_update = EXCLUDED.last_yield_update,
-          filters = EXCLUDED.filters,
           updated_at = NOW()
       `, [
-        analysisId, uprn, searchAddress, searchPostcode, timestamp,
-        selectedComparables || [], calculatedValuation, valuationBasedOnComparables,
-        lastValuationUpdate, calculatedRent, rentBasedOnComparables,
-        lastRentUpdate, calculatedYield, lastYieldUpdate, filters || {}
+        analysisId, uprn, searchAddress, searchPostcode, timestamp
       ])
 
       // Update recent analyses list (remove if exists, then add to top)
@@ -150,18 +128,23 @@ export async function POST(request: NextRequest) {
       
       await client.query(
         'INSERT INTO recent_analyses (analysis_id, timestamp) VALUES ($1, $2)',
-        [analysisId, timestamp || new Date()]
+        [analysisId, timestamp ? parseInt(timestamp.toString()) : Date.now()]
       )
 
       // Keep only the most recent 50 analyses
       await client.query(`
         DELETE FROM recent_analyses 
-        WHERE id NOT IN (
-          SELECT id FROM recent_analyses 
+        WHERE analysis_id NOT IN (
+          SELECT analysis_id FROM recent_analyses 
           ORDER BY timestamp DESC 
           LIMIT 50
         )
       `)
+      
+      } catch (transactionError) {
+        console.error('Transaction error for analysis:', analysisId, transactionError)
+        throw transactionError
+      }
     })
 
     return NextResponse.json({ success: true })

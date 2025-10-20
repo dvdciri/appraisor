@@ -78,32 +78,12 @@ export default function Header({
           <Link
             href="/"
             className={`px-3 sm:px-4 py-2.5 text-sm font-medium transition-colors ${
-              isActive('/') && !pathname.startsWith('/lists') && !pathname.startsWith('/tasks')
+              isActive('/')
                 ? 'text-white border-b-2 border-blue-500'
                 : 'text-gray-400 hover:text-white'
             }`}
           >
             Search
-          </Link>
-          <Link
-            href="/lists"
-            className={`px-3 sm:px-4 py-2.5 text-sm font-medium transition-colors ${
-              isActive('/lists')
-                ? 'text-white border-b-2 border-blue-500'
-                : 'text-gray-400 hover:text-white'
-            }`}
-          >
-            Lists
-          </Link>
-          <Link
-            href="/tasks"
-            className={`px-3 sm:px-4 py-2.5 text-sm font-medium transition-colors ${
-              isActive('/tasks')
-                ? 'text-white border-b-2 border-blue-500'
-                : 'text-gray-400 hover:text-white'
-            }`}
-          >
-            Tasks
           </Link>
         </div>
       </nav>

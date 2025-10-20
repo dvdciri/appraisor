@@ -62,43 +62,24 @@ export default function PropertyDetailsPage() {
     
     if (referrer === 'recent') {
       router.push('/')
-    } else if (referrer === 'lists') {
-      router.push('/lists')
     } else {
       router.back()
     }
   }
 
-  // Load property data from localStorage based on ID - NO API CALLS
+  // Load property data from database based on ID
   useEffect(() => {
     // Dynamic import to avoid SSR issues
-    import('../../../lib/persistence').then(async ({ getFullAnalysisData, loadRecentAnalyses, autoMigrate, loadCalculatorData }) => {
+    import('../../../lib/persistence').then(async ({ getFullAnalysisData, loadRecentAnalyses, loadCalculatorData }) => {
       try {
-        // Run migration first
-        autoMigrate()
-        
-        console.log('Loading property data for UID:', params.id)
         
         if (params.id) {
           // Load from new storage structure
           const fullData = await getFullAnalysisData(params.id as string)
           
           if (fullData) {
-            console.log('Loaded property data from new storage structure')
             // Combine property data with user analysis for backward compatibility
-            setPropertyData({
-              ...fullData.propertyData,
-              calculatedValuation: fullData.userAnalysis.calculatedValuation,
-              valuationBasedOnComparables: fullData.userAnalysis.valuationBasedOnComparables,
-              lastValuationUpdate: fullData.userAnalysis.lastValuationUpdate,
-              calculatedRent: fullData.userAnalysis.calculatedRent,
-              rentBasedOnComparables: fullData.userAnalysis.rentBasedOnComparables,
-              lastRentUpdate: fullData.userAnalysis.lastRentUpdate,
-              calculatedYield: fullData.userAnalysis.calculatedYield,
-              lastYieldUpdate: fullData.userAnalysis.lastYieldUpdate
-            })
-            setComparables(new Set(fullData.userAnalysis.selectedComparables))
-            setFilters(fullData.userAnalysis.filters)
+            setPropertyData(fullData.propertyData)
             
             // Load calculator data and extract notes
             const calculatorData = await loadCalculatorData(params.id as string)
@@ -112,23 +93,10 @@ export default function PropertyDetailsPage() {
             const recentList = await loadRecentAnalyses()
             if (recentList.length > 0) {
               const mostRecentId = recentList[0].analysisId
-              console.log('Falling back to most recent analysis with UID:', mostRecentId)
               
               const fallbackData = await getFullAnalysisData(mostRecentId)
               if (fallbackData) {
-                setPropertyData({
-                  ...fallbackData.propertyData,
-                  calculatedValuation: fallbackData.userAnalysis.calculatedValuation,
-                  valuationBasedOnComparables: fallbackData.userAnalysis.valuationBasedOnComparables,
-                  lastValuationUpdate: fallbackData.userAnalysis.lastValuationUpdate,
-                  calculatedRent: fallbackData.userAnalysis.calculatedRent,
-                  rentBasedOnComparables: fallbackData.userAnalysis.rentBasedOnComparables,
-                  lastRentUpdate: fallbackData.userAnalysis.lastRentUpdate,
-                  calculatedYield: fallbackData.userAnalysis.calculatedYield,
-                  lastYieldUpdate: fallbackData.userAnalysis.lastYieldUpdate
-                })
-                setComparables(new Set(fallbackData.userAnalysis.selectedComparables))
-                setFilters(fallbackData.userAnalysis.filters)
+                setPropertyData(fallbackData.propertyData)
                 
                 // Load calculator data and extract notes
                 const calculatorData = await loadCalculatorData(mostRecentId)
@@ -149,41 +117,9 @@ export default function PropertyDetailsPage() {
     })
   }, [params.id])
 
-  const updateComparables = (newComparables: Set<string>) => {
-    setComparables(newComparables)
-    
-    // Update the analysis data in new storage structure
-    import('../../../lib/persistence').then(({ updateUserAnalysis }) => {
-      try {
-        if (typeof window !== 'undefined' && params.id) {
-          updateUserAnalysis(params.id as string, {
-            selectedComparables: Array.from(newComparables)
-          })
-          console.log('Updated comparables in analysis:', params.id, 'with', newComparables.size, 'items')
-        }
-      } catch (e) {
-        console.error('Failed to save comparables', e)
-      }
-    })
-  }
+  // REMOVED: updateComparables function
 
-  const updateFilters = (newFilters: typeof filters) => {
-    setFilters(newFilters)
-    
-    // Update the analysis data in new storage structure
-    import('../../../lib/persistence').then(({ updateUserAnalysis }) => {
-      try {
-        if (typeof window !== 'undefined' && params.id) {
-          updateUserAnalysis(params.id as string, {
-            filters: newFilters
-          })
-          console.log('Updated filters in analysis:', params.id)
-        }
-      } catch (e) {
-        console.error('Failed to save filters', e)
-      }
-    })
-  }
+  // REMOVED: updateFilters function
 
   // Notes handlers
   const handleOpenNotesDialog = () => {
@@ -274,14 +210,9 @@ export default function PropertyDetailsPage() {
         <div className="max-w-7xl mx-auto space-y-8">
           <div className="animate-enter-subtle">
             <PropertyDetails 
-              data={propertyData as any} 
+              propertyData={propertyData as any} 
               propertyId={params.id as string}
-              comparables={comparables}
-              filters={filters}
-              onComparablesChange={updateComparables}
-              onFiltersChange={updateFilters}
-              onNotesClick={handleOpenNotesDialog}
-              hasNotes={!!notes}
+              onBack={() => router.back()}
             />
           </div>
         </div>

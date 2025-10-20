@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Header from '../components/Header'
-import { loadPropertyData, savePropertyData } from '../../lib/persistence'
+// REMOVED: Deprecated local storage imports
 
 // Calculator Components
 function CalculatorSection({ title, children, className = "", icon }: { 
@@ -1942,28 +1942,10 @@ export default function InvestPage() {
   const [propertyData, setPropertyData] = useState<PropertyData | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
 
-  // Load persisted data on mount
+  // Load property data from API on mount
   useEffect(() => {
-    const loadPersistedData = async () => {
-      // Load property data
-      const persistedPropertyData = await loadPropertyData()
-      if (persistedPropertyData) {
-        setPropertyData(persistedPropertyData)
-        setLoading(false)
-      } else {
-        // Load property data from API if not persisted
-        loadPropertyDataFromAPI()
-      }
-    }
-    loadPersistedData()
+    loadPropertyDataFromAPI()
   }, [])
-
-  // Save property data when it changes
-  useEffect(() => {
-    if (propertyData) {
-      savePropertyData(propertyData)
-    }
-  }, [propertyData])
 
   const loadPropertyDataFromAPI = async () => {
     try {

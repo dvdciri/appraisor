@@ -13,7 +13,6 @@ import {
   saveUserAnalysis,
   type UserAnalysis,
   getUserAnalysis,
-  autoMigrate,
   loadUserAnalysesStore,
   deleteProperty,
   loadRecentAnalyses,
@@ -89,13 +88,7 @@ function RecentPropertyItem({ analysis, index, onClick, onDelete }: { analysis: 
         const fullData = await getFullAnalysisData(analysis.id)
         if (fullData) {
           // Combine property data with user analysis for backward compatibility
-          const combined = {
-            ...fullData.propertyData,
-            calculatedValuation: fullData.userAnalysis.calculatedValuation,
-            valuationBasedOnComparables: fullData.userAnalysis.valuationBasedOnComparables,
-            lastValuationUpdate: fullData.userAnalysis.lastValuationUpdate
-          }
-          setPropertyData(combined)
+          setPropertyData(fullData.propertyData)
         }
       } catch (e) {
         console.error('Failed to load property data for list item:', e)
@@ -193,38 +186,63 @@ export default function Home() {
   const [recentAnalyses, setRecentAnalyses] = useState<RecentAnalysis[]>([])
   const [propertySearchTerm, setPropertySearchTerm] = useState('')
 
-  // Run migration on mount and load recent analyses
+  // Load recent analyses on mount
   useEffect(() => {
     const loadRecentAnalysesData = async () => {
-      autoMigrate()
-      
-      // Load from new storage structure
-      const recentList = await loadRecentAnalyses()
-      
-      // Convert new format to old format for backward compatibility
-      const analyses: RecentAnalysis[] = await Promise.all(
-        recentList.map(async (item: any) => {
-          const userAnalysis = await getUserAnalysis(item.analysisId)
-          if (userAnalysis) {
-            return {
-              id: item.analysisId,
-              searchDate: new Date(item.timestamp).toISOString(),
-              comparables: userAnalysis.selectedComparables,
-              filters: userAnalysis.filters
+      try {
+        // Load from new storage structure
+        const recentList = await loadRecentAnalyses()
+        
+        // Convert new format to old format for backward compatibility
+        const analyses: RecentAnalysis[] = await Promise.all(
+          recentList.map(async (item: any) => {
+            try {
+              const userAnalysis = await getUserAnalysis(item.analysisId)
+              if (userAnalysis) {
+                // Ensure timestamp is valid before creating Date object
+                let timestamp = Date.now() // Default to current time
+                
+                if (typeof item.timestamp === 'number' && item.timestamp > 0) {
+                  timestamp = item.timestamp
+                } else if (typeof item.timestamp === 'string') {
+                  const parsed = parseInt(item.timestamp)
+                  if (!isNaN(parsed) && parsed > 0) {
+                    timestamp = parsed
+                  }
+                }
+                
+                // Validate the timestamp is reasonable (not too far in past/future)
+                const minTimestamp = Date.now() - (10 * 365 * 24 * 60 * 60 * 1000) // 10 years ago
+                const maxTimestamp = Date.now() + (1 * 365 * 24 * 60 * 60 * 1000) // 1 year from now
+                
+                if (timestamp < minTimestamp || timestamp > maxTimestamp) {
+                  timestamp = Date.now()
+                }
+                
+                return {
+                  id: item.analysisId,
+                  searchDate: new Date(timestamp).toISOString()
+                }
+              }
+              return null
+            } catch (itemError) {
+              console.error('Error processing item:', item, itemError)
+              return null
             }
-          }
-          return null
-        })
-      ).then(results => results.filter((a: any): a is RecentAnalysis => a !== null))
-      
-      setRecentAnalyses(analyses)
+          })
+        ).then(results => results.filter((a: any): a is RecentAnalysis => a !== null))
+        
+        setRecentAnalyses(analyses)
+      } catch (error) {
+        console.error('Error loading recent analyses:', error)
+        setRecentAnalyses([])
+      }
     }
     
     loadRecentAnalysesData()
   }, [])
 
   const loadRecentAnalysis = (analysis: RecentAnalysis) => {
-    console.log('Loading analysis:', analysis.id, 'with comparables:', analysis.comparables)
     router.push(`/details/${analysis.id}?ref=recent`)
   }
 
@@ -236,11 +254,7 @@ export default function Home() {
     saveUserAnalysesStore({})
     // Note: We keep generic properties as they might be referenced by other data
     
-    // Clear legacy storage
-    if (typeof localStorage !== 'undefined') {
-      localStorage.removeItem('recentAnalyses')
-      localStorage.removeItem('propertyDataStore')
-    }
+    // Legacy storage cleanup no longer needed - using database only
   }
 
   const handleDeleteProperty = (propertyId: string) => {
@@ -258,7 +272,7 @@ export default function Home() {
     return true
   })
 
-  const saveToRecentAnalyses = (data: any, searchAddress: string, searchPostcode: string) => {
+  const saveToRecentAnalyses = async (data: any, searchAddress: string, searchPostcode: string) => {
     const analysisId = generateUID()
     console.log('Creating new analysis with UID:', analysisId)
     
@@ -269,76 +283,22 @@ export default function Home() {
       throw new Error('Property data missing UPRN')
     }
     
-    console.log('Property UPRN:', uprn)
     
     // Save generic property data (shared across all users)
     saveGenericProperty(uprn, data)
-    console.log('Saved generic property data for UPRN:', uprn)
     
-    // Auto-select comparables based on criteria and calculate valuation
-    const autoSelectedComparables: string[] = []
-    let calculatedValuation = 0
-    
-    if (data.data.attributes.nearby_completed_transactions) {
-      const propertyBeds = data.data.attributes.number_of_bedrooms?.value
-      const propertyBaths = data.data.attributes.number_of_bathrooms?.value
-      const propertyType = data.data.attributes.property_type?.value
-      
-      // Filter comparables: sold within last year, same beds/baths/type
-      const oneYearAgo = new Date()
-      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
-      
-      const matchingTransactions = data.data.attributes.nearby_completed_transactions.filter((transaction: any) => {
-        // Must have been sold within the last year
-        const transactionDate = new Date(transaction.transaction_date)
-        if (transactionDate < oneYearAgo) return false
-        
-        // Must have same number of bedrooms
-        if (propertyBeds && transaction.number_of_bedrooms !== propertyBeds) return false
-        
-        // Must have same number of bathrooms
-        if (propertyBaths && transaction.number_of_bathrooms !== propertyBaths) return false
-        
-        // Must be same property type
-        if (propertyType && transaction.property_type !== propertyType) return false
-        
-        return true
-      })
-      
-      // Get property IDs of matching transactions
-      autoSelectedComparables.push(...matchingTransactions.map((t: any) => t.street_group_property_id))
-      console.log('Auto-selected', autoSelectedComparables.length, 'comparables based on criteria')
-      
-      // Calculate average valuation from matching transactions
-      if (matchingTransactions.length > 0) {
-        const totalPrice = matchingTransactions.reduce((sum: number, t: any) => sum + (t.price || 0), 0)
-        calculatedValuation = Math.round(totalPrice / matchingTransactions.length)
-        console.log('Calculated valuation:', calculatedValuation, 'from', matchingTransactions.length, 'comparables')
-      }
-    }
+    // REMOVED: Comparables and valuation functionality
     
     // Create user analysis (user-specific data)
     const userAnalysis: UserAnalysis = {
       uprn,
       searchAddress,
       searchPostcode,
-      timestamp: Date.now(),
-      selectedComparables: autoSelectedComparables,
-      calculatedValuation,
-      valuationBasedOnComparables: autoSelectedComparables.length,
-      lastValuationUpdate: Date.now(),
-      filters: {
-        propertyType: '',
-        minBeds: '',
-        maxBeds: '',
-        minBaths: '',
-        maxBaths: ''
-      }
+      timestamp: Date.now()
     }
     
     // Save user analysis (this also updates recent analyses list)
-    saveUserAnalysis(analysisId, userAnalysis)
-    console.log('Saved user analysis with calculated valuation')
+    await saveUserAnalysis(analysisId, userAnalysis)
     
     // Create default calculator data with pre-filled values
     const defaultCalculatorData: CalculatorData = {
@@ -376,7 +336,7 @@ export default function Home() {
         findersFee: ''
       },
       purchaseFinance: {
-        purchasePrice: calculatedValuation > 0 ? calculatedValuation.toString() : '',
+        purchasePrice: '',
         deposit: '',
         ltv: '75',
         loanAmount: '',
@@ -401,9 +361,8 @@ export default function Home() {
       propertyValue: ''
     }
     
-    // Save default calculator data immediately
-    saveCalculatorData(analysisId, defaultCalculatorData)
-    console.log('Saved default calculator data with pre-filled purchase price:', calculatedValuation || 'No valuation calculated')
+    // Save default calculator data after analysis is saved
+    await saveCalculatorData(analysisId, defaultCalculatorData)
     
     return analysisId
   }
@@ -449,7 +408,6 @@ export default function Home() {
         )
         
         if (existingAnalysisId) {
-          console.log('Property already exists with UPRN:', uprn, 'Analysis ID:', existingAnalysisId)
           // Navigate to existing analysis details page
           router.push(`/details/${existingAnalysisId}`)
           return
@@ -457,7 +415,7 @@ export default function Home() {
       }
       
       // Save to recent analyses and get the analysis ID
-      const analysisId = saveToRecentAnalyses(data, address, postcode)
+      const analysisId = await saveToRecentAnalyses(data, address, postcode)
       
       // Refresh the recent analyses list
       const recentList = await loadRecentAnalyses()
@@ -467,9 +425,7 @@ export default function Home() {
           if (userAnalysis) {
             return {
               id: item.analysisId,
-              searchDate: new Date(item.timestamp).toISOString(),
-              comparables: userAnalysis.selectedComparables,
-              filters: userAnalysis.filters
+              searchDate: new Date(item.timestamp).toISOString()
             }
           }
           return null
@@ -547,46 +503,6 @@ export default function Home() {
                 </form>
               </div>
 
-              {/* Action Menu Grid */}
-              <div className="grid grid-cols-2 gap-4 animate-enter-subtle-delayed">
-                {/* Lists */}
-                <button
-                  type="button"
-                  onClick={() => router.push('/lists')}
-                  className="bg-gray-800 hover:bg-gray-700 rounded-lg p-6 transition-colors border-2 border-gray-700 hover:border-green-600 group"
-                >
-                  <div className="flex flex-col items-center text-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-green-600 group-hover:bg-green-500 flex items-center justify-center transition-colors">
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 className="text-white font-semibold">Lists</h3>
-                      <p className="text-gray-400 text-sm mt-1">Organize properties</p>
-                    </div>
-                  </div>
-                </button>
-
-                {/* Tasks */}
-                <button
-                  type="button"
-                  onClick={() => router.push('/tasks')}
-                  className="bg-gray-800 hover:bg-gray-700 rounded-lg p-6 transition-colors border-2 border-gray-700 hover:border-red-600 group"
-                >
-                  <div className="flex flex-col items-center text-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-red-600 group-hover:bg-red-500 flex items-center justify-center transition-colors">
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 className="text-white font-semibold">Tasks</h3>
-                      <p className="text-gray-400 text-sm mt-1">Powered by Todoist</p>
-                    </div>
-                  </div>
-                </button>
-              </div>
 
               {/* Properties List */}
               {recentAnalyses.length > 0 ? (

@@ -267,7 +267,6 @@ function InvestmentCalculator({ propertyId, onNotesModalOpen, notes }: {
       
       if (savedData) {
         // Load saved data (defaults are already set when property was first searched)
-        console.log('Loading calculator data with purchase price:', savedData.purchaseFinance.purchasePrice || 'Not set')
         setPurchaseType(savedData.purchaseType)
         setIncludeFeesInLoan(savedData.includeFeesInLoan)
         setBridgingDetails(savedData.bridgingDetails)
@@ -317,7 +316,10 @@ function InvestmentCalculator({ propertyId, onNotesModalOpen, notes }: {
       propertyValue
     }
     
-    saveCalculatorData(propertyId, calculatorData)
+    const saveData = async () => {
+      await saveCalculatorData(propertyId, calculatorData)
+    }
+    saveData()
   }, [
     propertyId,
     notes,
@@ -2172,15 +2174,11 @@ export default function InvestPage() {
     })
   }, [notes, params.id])
 
-  // Load property data based on ID parameter - NO API CALLS
+  // Load property data based on ID parameter from database
   useEffect(() => {
     // Dynamic import to avoid SSR issues
-    import('../../../lib/persistence').then(({ getFullAnalysisData, loadRecentAnalyses, autoMigrate }) => {
+    import('../../../lib/persistence').then(({ getFullAnalysisData, loadRecentAnalyses }) => {
       try {
-        // Run migration first
-        autoMigrate()
-        
-        console.log('Loading property data for analysis UID:', params.id)
         
         if (params.id) {
           // Load from new storage structure
@@ -2188,19 +2186,8 @@ export default function InvestPage() {
             const fullData = await getFullAnalysisData(params.id as string)
             
             if (fullData) {
-              console.log('Loaded property data from new storage structure')
               // Combine property data with user analysis for backward compatibility
-              setPropertyData({
-                ...fullData.propertyData,
-                calculatedValuation: fullData.userAnalysis.calculatedValuation,
-                valuationBasedOnComparables: fullData.userAnalysis.valuationBasedOnComparables,
-                lastValuationUpdate: fullData.userAnalysis.lastValuationUpdate,
-                calculatedRent: fullData.userAnalysis.calculatedRent,
-                rentBasedOnComparables: fullData.userAnalysis.rentBasedOnComparables,
-                lastRentUpdate: fullData.userAnalysis.lastRentUpdate,
-                calculatedYield: fullData.userAnalysis.calculatedYield,
-                lastYieldUpdate: fullData.userAnalysis.lastYieldUpdate
-              })
+              setPropertyData(fullData.propertyData)
             } else {
               console.error('No analysis found for UID:', params.id)
               
@@ -2208,21 +2195,10 @@ export default function InvestPage() {
               const recentList = await loadRecentAnalyses()
               if (recentList.length > 0) {
                 const mostRecentId = recentList[0].analysisId
-                console.log('Falling back to most recent analysis with UID:', mostRecentId)
                 
                 const fallbackData = await getFullAnalysisData(mostRecentId)
                 if (fallbackData) {
-                  setPropertyData({
-                    ...fallbackData.propertyData,
-                    calculatedValuation: fallbackData.userAnalysis.calculatedValuation,
-                    valuationBasedOnComparables: fallbackData.userAnalysis.valuationBasedOnComparables,
-                    lastValuationUpdate: fallbackData.userAnalysis.lastValuationUpdate,
-                    calculatedRent: fallbackData.userAnalysis.calculatedRent,
-                    rentBasedOnComparables: fallbackData.userAnalysis.rentBasedOnComparables,
-                    lastRentUpdate: fallbackData.userAnalysis.lastRentUpdate,
-                    calculatedYield: fallbackData.userAnalysis.calculatedYield,
-                    lastYieldUpdate: fallbackData.userAnalysis.lastYieldUpdate
-                  })
+                  setPropertyData(fallbackData.propertyData)
                 }
               }
             }

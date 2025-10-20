@@ -45,23 +45,73 @@ export async function POST(request: NextRequest) {
 
 
 async function fetchRealPropertyDetails(address: string, postcode: string): Promise<any> {
+  // Check if API key is available
+  if (!process.env.STREET_API_KEY) {
+    console.error('STREET_API_KEY not found. Please configure your API key.');
+    throw new Error('STREET_API_KEY not found. Please configure your API key.');
+  }
+
+  const requestPayload = {
+    data: {
+      address: address,
+      postcode: postcode
+    }
+  };
+
+  console.log('🔍 Street API Request Details:');
+  console.log('  URL:', 'https://api.data.street.co.uk/street-data-api/v2/properties/addresses?tier=premium');
+  console.log('  Method: POST');
+  console.log('  Address:', address);
+  console.log('  Postcode:', postcode);
+  console.log('  API Key present:', !!process.env.STREET_API_KEY);
+  console.log('  Request payload:', JSON.stringify(requestPayload, null, 2));
+
   const response = await fetch('https://api.data.street.co.uk/street-data-api/v2/properties/addresses?tier=premium', {
       method: 'POST',
       headers: {
           'Content-Type': 'application/json',
           'x-api-key': `${process.env.STREET_API_KEY}`,
       },
-      body: JSON.stringify({
-          data: {
-              address: address,
-              postcode: postcode
-          }
-      }),
+      body: JSON.stringify(requestPayload),
   });
 
+  console.log('📡 Street API Response Details:');
+  console.log('  Status:', response.status);
+  console.log('  Status Text:', response.statusText);
+  console.log('  Headers:', Object.fromEntries(response.headers.entries()));
+
   if (!response.ok) {
-      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+    // Try to get the response body for more details
+    let responseBody = '';
+    try {
+      responseBody = await response.text();
+      console.log('  Response Body:', responseBody);
+    } catch (e) {
+      console.log('  Could not read response body:', e);
+    }
+    
+    console.error('❌ Street API Error:', {
+      status: response.status,
+      statusText: response.statusText,
+      body: responseBody
+    });
+    
+    throw new Error(`API request failed: ${response.status} ${response.statusText} - ${responseBody}`);
   }
 
-  return response.json();
+  // Log successful response
+  const responseData = await response.json();
+  console.log('✅ Street API Success:');
+  console.log('  Response data keys:', Object.keys(responseData));
+  if (responseData.data) {
+    console.log('  Data keys:', Object.keys(responseData.data));
+    if (responseData.data.attributes) {
+      console.log('  Attributes keys:', Object.keys(responseData.data.attributes));
+    }
+  }
+  console.log('  Full response:', JSON.stringify(responseData, null, 2));
+
+  return responseData;
 }
+
+// REMOVED: Mock data function - no fallbacks wanted

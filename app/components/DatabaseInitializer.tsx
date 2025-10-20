@@ -4,9 +4,10 @@ import { useEffect } from 'react'
 
 export default function DatabaseInitializer() {
   useEffect(() => {
-    // Initialize database on app startup
+    // Initialize database on app startup via API call
     const initializeDatabase = async () => {
       try {
+        // Call the database initialization API endpoint
         const response = await fetch('/api/db/init', {
           method: 'POST',
           headers: {
@@ -17,17 +18,16 @@ export default function DatabaseInitializer() {
         if (response.ok) {
           console.log('Database initialized successfully on startup')
         } else {
-          console.warn('Database initialization failed on startup:', await response.text())
+          const errorData = await response.json()
+          console.error('Database initialization failed on startup:', errorData)
         }
       } catch (error) {
-        console.warn('Database initialization error on startup:', error)
+        console.error('Database initialization error on startup:', error)
       }
     }
 
-    // Only run in production or when explicitly needed
-    if (process.env.NODE_ENV === 'production') {
-      initializeDatabase()
-    }
+    // Initialize database automatically on every app startup
+    initializeDatabase()
   }, [])
 
   return null // This component doesn't render anything

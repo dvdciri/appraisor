@@ -413,7 +413,7 @@ export default function RefurbishmentEstimatorPage() {
       refurbItems: newRefurbItems
     }
     
-    saveCalculatorData(params.id as string, updatedCalculatorData as any)
+    await saveCalculatorData(params.id as string, updatedCalculatorData as any)
     
     // Close dialog and navigate back to calculator
     setShowApplyConfirm(false)

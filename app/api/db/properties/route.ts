@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
         fetched_count = properties.fetched_count + 1,
         updated_at = NOW()
       RETURNING *
-    `, [uprn, data, lastFetched || new Date(), fetchedCount || 1])
+    `, [uprn, data, lastFetched || Date.now(), fetchedCount || 1])
 
     const property = result.rows[0]
     return NextResponse.json({
