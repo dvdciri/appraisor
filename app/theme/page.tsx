@@ -4,7 +4,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   return (
     <div className="space-y-3">
       <h3 className="text-sm font-medium text-fg-muted tracking-wide uppercase">{title}</h3>
-      <div className="bg-bg-elevated border border-border rounded-lg p-4 space-y-3">
+      <div className="bg-black/20 backdrop-blur-xl border border-gray-500/30 rounded-2xl p-6 space-y-3 shadow-2xl">
         {children}
       </div>
     </div>
@@ -13,52 +13,57 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function CodeBlock({ children }: { children: string }) {
   return (
-    <pre className="bg-bg-subtle border border-border rounded-md p-3 text-sm overflow-x-auto">
-      <code className="text-fg-primary">{children}</code>
+    <pre className="bg-black/30 border border-gray-500/30 rounded-xl p-4 text-sm overflow-x-auto backdrop-blur-xl">
+      <code className="text-gray-200">{children}</code>
     </pre>
   );
 }
 
 export default function ThemePage() {
   return (
-    <main className="min-h-screen w-full bg-bg-app text-fg-primary">
-      <div className="mx-auto max-w-6xl p-4 md:p-8 space-y-8">
+    <main className="relative min-h-screen w-full text-gray-100 overflow-hidden">
+      {/* Glassy Nebula background (subtle) */}
+      <div className="absolute inset-0 bg-gradient-to-br from-black via-gray-900 to-purple-900" />
+      <div className="absolute inset-0 bg-gradient-radial from-purple-800/30 via-purple-900/10 to-transparent" />
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+
+      <div className="relative mx-auto max-w-6xl p-6 md:p-10 space-y-8">
         <header className="space-y-4">
-          <h1 className="text-3xl font-bold">Nebula Theme Reference</h1>
-          <p className="text-fg-muted text-lg">
-            A comprehensive guide to using the Nebula dark theme across your application.
+          <h1 className="text-3xl font-bold">Glassy Nebula Theme</h1>
+          <p className="text-gray-300 text-lg">
+            Reference and examples for the Glassy Nebula design system: dark glass surfaces over a nebula backdrop.
           </p>
         </header>
 
-        {/* Color Palette */}
+        {/* Color Palette (Glassy Nebula) */}
         <Section title="Color Palette">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="space-y-2">
-              <div className="h-16 bg-bg-app border border-border rounded-md"></div>
+              <div className="h-16 bg-black/20 backdrop-blur-xl border border-gray-500/30 rounded-xl"></div>
               <div className="text-xs">
-                <div className="font-mono">bg-app</div>
-                <div className="text-fg-muted">Primary background</div>
+                <div className="font-mono">glass-bg</div>
+                <div className="text-gray-400">Dark glass surface</div>
               </div>
             </div>
             <div className="space-y-2">
-              <div className="h-16 bg-bg-elevated border border-border rounded-md"></div>
+              <div className="h-16 bg-black/30 backdrop-blur-xl border border-gray-500/30 rounded-xl"></div>
               <div className="text-xs">
-                <div className="font-mono">bg-elevated</div>
-                <div className="text-fg-muted">Cards, modals</div>
+                <div className="font-mono">glass-elevated</div>
+                <div className="text-gray-400">Elevated glass</div>
               </div>
             </div>
             <div className="space-y-2">
-              <div className="h-16 bg-bg-subtle border border-border rounded-md"></div>
+              <div className="h-16 bg-gray-500/20 backdrop-blur-xl border border-gray-500/30 rounded-xl"></div>
               <div className="text-xs">
-                <div className="font-mono">bg-subtle</div>
-                <div className="text-fg-muted">Inputs, badges</div>
+                <div className="font-mono">glass-subtle</div>
+                <div className="text-gray-400">Inputs / muted glass</div>
               </div>
             </div>
             <div className="space-y-2">
               <div className="h-16 bg-accent border border-border rounded-md"></div>
               <div className="text-xs">
                 <div className="font-mono">bg-accent</div>
-                <div className="text-fg-muted">Primary actions</div>
+                <div className="text-gray-400">Primary actions</div>
               </div>
             </div>
           </div>
@@ -134,15 +139,15 @@ export default function ThemePage() {
         </Section>
 
         {/* Cards & Surfaces */}
-        <Section title="Cards & Surfaces">
+        <Section title="Cards & Surfaces (Glassy)">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="rounded-lg border border-border bg-bg-elevated p-4">
+            <div className="rounded-2xl border border-gray-500/30 bg-black/20 backdrop-blur-xl p-6 shadow-2xl">
               <h4 className="font-semibold mb-2">Basic Card</h4>
-              <p className="text-fg-muted text-sm">Card content goes here</p>
+              <p className="text-gray-300 text-sm">Card content goes here</p>
             </div>
-            <div className="rounded-lg border border-border bg-gradient-to-br from-bg-subtle to-bg-elevated p-4">
+            <div className="rounded-2xl border border-gray-500/30 bg-black/30 backdrop-blur-xl p-6 shadow-2xl">
               <h4 className="font-semibold mb-2">Gradient Card</h4>
-              <p className="text-fg-muted text-sm">With subtle gradient background</p>
+              <p className="text-gray-300 text-sm">With dark glass gradient background</p>
             </div>
           </div>
           <CodeBlock>{`<div className="rounded-lg border border-border bg-bg-elevated p-4">

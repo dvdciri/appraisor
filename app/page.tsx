@@ -204,14 +204,15 @@ export default function Home() {
       // Extract UPRN for property data storage
       const uprn = extractUPRN(data)
       
-      if (uprn) {
-        // Save property data to database
-        await saveGenericProperty(uprn, data)
-        setSuccessMessage(`Property data saved successfully! UPRN: ${uprn}`)
-        console.log('Property data saved with UPRN:', uprn)
-      } else {
-        setErrorMessage('Failed to extract property identifier from the data.')
-      }
+           if (uprn) {
+             // Save property data to database
+             await saveGenericProperty(uprn, data)
+             console.log('Property data saved with UPRN:', uprn)
+             // Navigate to dashboard instead of showing success message
+             router.push(`/dashboard-v1/${uprn}`)
+           } else {
+             setErrorMessage('Failed to extract property identifier from the data.')
+           }
     } catch (error) {
       console.error('Error fetching property data:', error)
       setErrorMessage('An error occurred while searching for the property. Please try again.')
