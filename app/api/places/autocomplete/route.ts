@@ -41,11 +41,20 @@ export async function GET(request: NextRequest) {
 
     const data = await response.json()
     
+    // Log the complete autocomplete response
+    console.log('🔍 Places API Autocomplete Response:')
+    console.log('  Input Query:', input)
+    console.log('  Full Response:', JSON.stringify(data, null, 2))
+    
     // Transform the response to a simpler format
     const suggestions = data.suggestions?.map((suggestion: any) => ({
       place_id: suggestion.placePrediction.placeId,
       description: suggestion.placePrediction.text.text,
     })) || []
+
+    console.log('📋 Processed Suggestions:')
+    console.log('  Number of suggestions:', suggestions.length)
+    console.log('  Suggestions:', suggestions)
 
     return NextResponse.json({ suggestions })
   } catch (error) {

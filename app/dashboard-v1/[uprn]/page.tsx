@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import InvestmentCalculator from '../components/InvestmentCalculator'
-import ComparablesAnalysis from '../components/ComparablesAnalysis'
+import ComparablesAnalysis, { renderTransactionDetails } from '../components/ComparablesAnalysis'
+import GenericPanel from '../components/GenericPanel'
 
 type Section = 'property-details' | 'market-analysis' | 'sold-comparables' | 'investment-calculator' | 'ai-refurbishment' | 'risk-assessment'
 
@@ -808,6 +809,8 @@ export default function DashboardV1() {
   const [activeSection, setActiveSection] = useState<Section>('property-details')
   const [rightPanelOpen, setRightPanelOpen] = useState(false)
   const [activeSubsection, setActiveSubsection] = useState<string | null>(null)
+  const [comparablesPanelOpen, setComparablesPanelOpen] = useState(false)
+  const [selectedTransaction, setSelectedTransaction] = useState<any>(null)
   const [propertyData, setPropertyData] = useState<PropertyData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -833,6 +836,14 @@ export default function DashboardV1() {
     return `${meters.toLocaleString()}m² (${squareFeet.toLocaleString()}ft²)`
   }
 
+  // Helper function to get street view embed URL
+  const getStreetViewEmbedUrl = (latitude?: number, longitude?: number) => {
+    if (!latitude || !longitude) return ''
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+    // Use the correct Street View embed URL format
+    return `https://www.google.com/maps/embed/v1/streetview?key=${apiKey}&location=${latitude},${longitude}&heading=0&pitch=0&fov=90`
+  }
+
 
   // Handle screen size detection
   useEffect(() => {
@@ -840,15 +851,18 @@ export default function DashboardV1() {
       const newIsLargeScreen = window.innerWidth >= 1920
       setIsLargeScreen(prevIsLargeScreen => {
         if (newIsLargeScreen !== prevIsLargeScreen) {
-          // When expanding to large screen, close the floating panel
+          // When expanding to large screen, close the floating panels
           if (newIsLargeScreen) {
             setRightPanelOpen(false)
+            setComparablesPanelOpen(false)
           }
-          // When shrinking to small screen, deselect subsection and hide panel
+          // When shrinking to small screen, deselect subsection and hide panels
           if (!newIsLargeScreen) {
             // Batch the state updates to prevent race conditions
             setActiveSubsection(null)
             setRightPanelOpen(false)
+            setSelectedTransaction(null)
+            setComparablesPanelOpen(false)
           }
           return newIsLargeScreen
         }
@@ -964,6 +978,22 @@ export default function DashboardV1() {
     }
   }
 
+  const handleTransactionSelect = (transaction: any) => {
+    setSelectedTransaction(transaction)
+    setComparablesPanelOpen(true)
+    // Only open mobile overlay on small screens
+    if (!isLargeScreen) {
+      setComparablesPanelOpen(true)
+    }
+  }
+
+  const handleCloseComparablesPanel = () => {
+    setComparablesPanelOpen(false)
+    if (!isLargeScreen) {
+      setSelectedTransaction(null)
+    }
+  }
+
   return (
     <div className="min-h-screen relative overflow-hidden">
       {/* Deep Space Base */}
@@ -1065,6 +1095,10 @@ export default function DashboardV1() {
                         setRightPanelOpen(false)
                         setActiveSubsection(null)
                       }
+                      if (section.id !== 'sold-comparables') {
+                        setComparablesPanelOpen(false)
+                        setSelectedTransaction(null)
+                      }
                     }}
                     className={`w-full flex items-center gap-3 px-4 py-2 rounded-xl text-left transition-all duration-300 border ${
                       activeSection === section.id
@@ -1086,25 +1120,28 @@ export default function DashboardV1() {
           {/* Left Content Area */}
           <div className="flex-1">
           {/* Dark Glass Header */}
-          <header className="sticky top-0 z-40 p-6">
+          <header className="sticky top-0 z-40 p-4 pb-2">
             <div className="bg-black/20 backdrop-blur-xl border border-gray-500/30 rounded-2xl px-6 py-3 shadow-2xl">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center">
                 <div className="flex items-center">
                     <h1 className="text-xl font-bold text-gray-100">
                       Property Dashboard
                     </h1>
                 </div>
-                <div className="flex items-center gap-3">
-                  <button className="px-4 py-2 bg-gradient-to-r from-purple-500/80 to-pink-500/80 hover:from-purple-500 hover:to-pink-500 text-white rounded-xl text-sm font-medium transition-all duration-200 backdrop-blur-sm shadow-lg">
-                    Export
-                  </button>
-                </div>
               </div>
+              {/* Address Subtitle */}
+              {propertyData && (
+                <div className="mt-2">
+                  <p className="text-sm text-gray-300">
+                    {getPropertyValue('address.street_group_format.address_lines')}
+                  </p>
+                </div>
+              )}
             </div>
           </header>
 
           {/* Content Area */}
-          <div className="p-6">
+          <div className="p-4 pt-2">
             {loading ? (
               /* Loading Spinner */
               <div className="flex items-center justify-center min-h-[400px]">
@@ -1201,34 +1238,21 @@ export default function DashboardV1() {
                             />
                           </div>
                           
-                          {/* Street View with Overlay Button */}
-                          <div className="relative w-full h-48 rounded-lg overflow-hidden border border-gray-500/30 group">
-                            <img
-                              src={`https://maps.googleapis.com/maps/api/streetview?size=600x400&location=${getPropertyValue('location.coordinates.latitude')},${getPropertyValue('location.coordinates.longitude')}&fov=80&pitch=0&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`}
-                              alt="Street View"
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                e.currentTarget.style.display = 'none'
-                                e.currentTarget.nextElementSibling?.classList.remove('hidden')
-                              }}
+                          {/* Interactive Street View */}
+                          <div className="relative w-full h-48 rounded-lg overflow-hidden border border-gray-500/30">
+                            <iframe
+                              src={getStreetViewEmbedUrl(
+                                parseFloat(getPropertyValue('location.coordinates.latitude', '0')), 
+                                parseFloat(getPropertyValue('location.coordinates.longitude', '0'))
+                              )}
+                              width="100%"
+                              height="100%"
+                              style={{ border: 0 }}
+                              allowFullScreen
+                              loading="lazy"
+                              referrerPolicy="no-referrer-when-downgrade"
+                              title="Interactive Street View"
                             />
-                            <div className="hidden absolute inset-0 bg-gray-700 flex items-center justify-center">
-                              <div className="text-center text-gray-400">
-                                <div className="text-2xl mb-1">🏠</div>
-                                <div className="text-sm">Street View</div>
-                              </div>
-                            </div>
-                            {/* Overlay Button */}
-                            <div className="absolute top-3 left-3">
-                              <a
-                                href={`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${getPropertyValue('location.coordinates.latitude')},${getPropertyValue('location.coordinates.longitude')}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-black/60 hover:bg-black/80 text-white rounded-lg text-xs font-medium transition-all duration-200 backdrop-blur-sm border border-white/20"
-                              >
-                                Open in Maps
-                              </a>
-                            </div>
                           </div>
                         </div>
                       </div>
@@ -1413,6 +1437,7 @@ export default function DashboardV1() {
                         nearbyTransactions={getPropertyValue('nearby_completed_transactions') || []}
                         subjectPropertySqm={parseFloat(getPropertyValue('internal_area_square_metres', '0'))}
                         subjectPropertyStreet={getPropertyValue('address.simplified_format.street', '')}
+                        onTransactionSelect={handleTransactionSelect}
                       />
                     ) : (
                       <div className="text-center py-8 text-gray-400">
@@ -1445,100 +1470,45 @@ export default function DashboardV1() {
           </div>
           </div>
           
-          {/* Right Panel - Always visible on large screens, overlay on small screens */}
-          {activeSection === 'property-details' && (
-            <>
-              {/* Desktop Right Panel - Always visible on large screens */}
-              <div className={`w-[720px] bg-black/25 backdrop-blur-2xl border border-gray-500/30 flex flex-col shadow-2xl rounded-2xl mr-6 mt-6 mb-6 h-[calc(100vh-3rem)] ${isLargeScreen ? 'block' : 'hidden'}`}>
-                <div className="p-6 border-b border-gray-500/30 flex items-center justify-between flex-shrink-0">
-                  <h3 className="text-xl font-semibold text-fg-primary">
-                    {subsections[activeSection]?.find(s => s.id === activeSubsection)?.label}
-                        </h3>
-                      </div>
-                <div className="flex-1 p-6 overflow-y-auto min-h-0">
-                  <div className="space-y-6">
-                    {/* Property Details Subsections */}
-                    {activeSection === 'property-details' && activeSubsection && propertyData && (
-                      renderSubsectionContent(activeSubsection)
-                    )}
-                    {/* No subsection selected */}
-                    {activeSection === 'property-details' && !activeSubsection && (
-                      <div className="text-center py-16">
-                        <div className="text-6xl mb-6 opacity-60">🔍</div>
-                        <h3 className="text-xl font-semibold text-gray-200 mb-3">Ready to Explore?</h3>
-                        <p className="text-gray-400 mb-4 max-w-md mx-auto">
-                          Click on a subsection from the main page to dive into the fascinating world of this building!
-                        </p>
-              </div>
-            )}
-          </div>
+          {/* Generic Right Panel for Property Details */}
+          <GenericPanel
+            isOpen={activeSection === 'property-details' && (!!activeSubsection || rightPanelOpen)}
+            onClose={() => {
+              setRightPanelOpen(false)
+              setActiveSubsection(null)
+            }}
+            title={subsections[activeSection]?.find(s => s.id === activeSubsection)?.label || 'Property Details'}
+            isLargeScreen={isLargeScreen}
+          >
+            <div className="space-y-6">
+              {/* Property Details Subsections */}
+              {activeSection === 'property-details' && activeSubsection && propertyData && (
+                renderSubsectionContent(activeSubsection)
+              )}
+              {/* No subsection selected */}
+              {activeSection === 'property-details' && !activeSubsection && (
+                <div className="text-center py-16">
+                  <div className="text-6xl mb-6 opacity-60">🔍</div>
+                  <h3 className="text-xl font-semibold text-gray-200 mb-3">Ready to Explore?</h3>
+                  <p className="text-gray-400 mb-4 max-w-md mx-auto">
+                    Click on a subsection from the main page to dive into the fascinating world of this building!
+                  </p>
                 </div>
-              </div>
-            </>
-          )}
+              )}
+            </div>
+          </GenericPanel>
+
+          {/* Generic Right Panel for Comparables */}
+          <GenericPanel
+            isOpen={activeSection === 'sold-comparables' && comparablesPanelOpen && !!selectedTransaction}
+            onClose={handleCloseComparablesPanel}
+            title="Transaction Details"
+            isLargeScreen={isLargeScreen}
+          >
+            {selectedTransaction && renderTransactionDetails(selectedTransaction)}
+          </GenericPanel>
         </main>
 
-        {/* Mobile Right Panel Overlay - Only for small screens */}
-        {rightPanelOpen && activeSection === 'property-details' && (
-          <div className={`fixed inset-0 z-50 flex justify-end items-start animate-[fadeIn_0.15s_ease-out] ${isLargeScreen ? 'hidden' : 'block'}`}>
-            {/* Backdrop */}
-            <div 
-              className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-[fadeIn_0.15s_ease-out]"
-              onClick={() => {
-                setRightPanelOpen(false)
-                setActiveSubsection(null)
-              }}
-            />
-            
-            {/* Right Panel (Dark Glass) */}
-            <div className="relative w-[720px] bg-black/25 backdrop-blur-2xl border border-gray-500/30 flex flex-col shadow-2xl rounded-2xl mr-6 mt-6 mb-6 animate-[slideInRight_0.3s_cubic-bezier(0.4,0,0.2,1)] h-[calc(100vh-3rem)]">
-              <div className="p-6 border-b border-gray-500/30 flex items-center justify-between flex-shrink-0">
-                <h3 className="text-xl font-semibold text-fg-primary">
-                  {subsections[activeSection]?.find(s => s.id === activeSubsection)?.label}
-                </h3>
-                <button
-                  onClick={() => {
-                    setRightPanelOpen(false)
-                    setActiveSubsection(null)
-                  }}
-                  className="p-2 rounded-lg hover:bg-gray-500/20 transition-colors"
-                >
-                  <span className="text-fg-muted hover:text-fg-primary text-xl">✕</span>
-                </button>
-              </div>
-              <div className="flex-1 p-6 overflow-y-auto min-h-0">
-                <div className="space-y-6">
-                  {/* Property Details Subsections */}
-                  {activeSection === 'property-details' && activeSubsection && propertyData && (
-                    renderSubsectionContent(activeSubsection)
-                  )}
-
-                  {/* No subsection selected */}
-                  {activeSection === 'property-details' && !activeSubsection && (
-                    <div className="text-center py-16">
-                      <div className="text-6xl mb-6 opacity-60">🔍</div>
-                      <h3 className="text-xl font-semibold text-gray-200 mb-3">Ready to Explore?</h3>
-                      <p className="text-gray-400 mb-4 max-w-md mx-auto">
-                        Click on a subsection from the main page to dive into the fascinating world of this building!
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Default content for property details subsections not implemented */}
-                  {activeSection === 'property-details' && activeSubsection && !['ownership', 'construction', 'plot', 'utilities', 'energy'].includes(activeSubsection) && (
-                    <div className="bg-black/20 border border-gray-500/30 rounded-lg p-6">
-                      <h4 className="font-semibold text-gray-100 mb-3 text-lg">Details</h4>
-                      <div className="text-center py-8">
-                        <div className="text-3xl mb-3 opacity-50">📋</div>
-                        <p className="text-gray-400">No data available for this section</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   )

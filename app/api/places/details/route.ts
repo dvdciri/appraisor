@@ -39,6 +39,11 @@ export async function GET(request: NextRequest) {
 
     const data = await response.json()
     
+    // Log the complete Places API response
+    console.log('🔍 Places API Details Response:')
+    console.log('  Place ID:', placeId)
+    console.log('  Full Response:', JSON.stringify(data, null, 2))
+    
     // Extract street number and postal code
     let streetNumber = ''
     let route = ''

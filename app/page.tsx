@@ -64,6 +64,9 @@ export default function Home() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [isSelectingFromAutocomplete, setIsSelectingFromAutocomplete] = useState(false)
+  const [isManualEntry, setIsManualEntry] = useState(false)
+  const [manualAddress, setManualAddress] = useState('')
+  const [manualPostcode, setManualPostcode] = useState('')
 
 
   const saveToRecentAnalyses = async (data: any, searchAddress: string, searchPostcode: string) => {
@@ -166,12 +169,37 @@ export default function Home() {
     setIsSelectingFromAutocomplete(false)
   }
 
+  const toggleManualEntry = () => {
+    setIsManualEntry(!isManualEntry)
+    // Clear all form data when switching modes
+    setFullAddress('')
+    setSelectedAddress('')
+    setSelectedPostcode('')
+    setManualAddress('')
+    setManualPostcode('')
+    setErrorMessage(null)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('Form submit - selectedAddress:', selectedAddress, 'selectedPostcode:', selectedPostcode, 'fullAddress:', fullAddress)
-    if (!selectedAddress || !selectedPostcode) {
-      setErrorMessage('Please select an address from the suggestions')
-      return
+    
+    // Determine which address and postcode to use based on entry mode
+    const addressToUse = isManualEntry ? manualAddress.trim() : selectedAddress
+    const postcodeToUse = isManualEntry ? manualPostcode.trim() : selectedPostcode
+    
+    console.log('Form submit - isManualEntry:', isManualEntry, 'address:', addressToUse, 'postcode:', postcodeToUse)
+    
+    // Validate inputs based on mode
+    if (isManualEntry) {
+      if (!manualAddress.trim() || !manualPostcode.trim()) {
+        setErrorMessage('Please enter both address and postcode')
+        return
+      }
+    } else {
+      if (!selectedAddress || !selectedPostcode) {
+        setErrorMessage('Please select an address from the suggestions')
+        return
+      }
     }
 
     setLoading(true)
@@ -184,7 +212,7 @@ export default function Home() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ address: selectedAddress, postcode: selectedPostcode }),
+        body: JSON.stringify({ address: addressToUse, postcode: postcodeToUse }),
       })
       
       if (!response.ok) {
@@ -262,17 +290,51 @@ export default function Home() {
             </div>
             
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <label htmlFor="address" className="block text-sm font-medium text-fg-primary mb-2">
-                  Property Address
-                </label>
-                <AddressAutocomplete
-                  onAddressSelect={handleAddressSelect}
-                  onChange={handleAddressChange}
-                  value={fullAddress}
-                  placeholder="Enter property address"
-                />
-              </div>
+              {!isManualEntry ? (
+                // Autocomplete mode
+                <div>
+                  <label htmlFor="address" className="block text-sm font-medium text-fg-primary mb-2">
+                    Property Address
+                  </label>
+                  <AddressAutocomplete
+                    onAddressSelect={handleAddressSelect}
+                    onChange={handleAddressChange}
+                    value={fullAddress}
+                    placeholder="Enter property address"
+                  />
+                </div>
+              ) : (
+                // Manual entry mode
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="manual-address" className="block text-sm font-medium text-fg-primary mb-2">
+                      Property Address
+                    </label>
+                    <input
+                      type="text"
+                      id="manual-address"
+                      value={manualAddress}
+                      onChange={(e) => setManualAddress(e.target.value)}
+                      placeholder="e.g., 123 Main Street"
+                      className="w-full px-4 py-3 bg-bg-subtle border border-border rounded-lg text-fg-primary placeholder-fg-muted focus:outline-none focus:shadow-focus"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="manual-postcode" className="block text-sm font-medium text-fg-primary mb-2">
+                      Postcode
+                    </label>
+                    <input
+                      type="text"
+                      id="manual-postcode"
+                      value={manualPostcode}
+                      onChange={(e) => setManualPostcode(e.target.value)}
+                      placeholder="e.g., SW1A 1AA"
+                      className="w-full px-4 py-3 bg-bg-subtle border border-border rounded-lg text-fg-primary placeholder-fg-muted focus:outline-none focus:shadow-focus"
+                    />
+                  </div>
+                </div>
+              )}
+              
               <button
                 type="submit"
                 disabled={loading}
@@ -280,6 +342,20 @@ export default function Home() {
               >
                 Find Property
               </button>
+              
+              {/* Toggle link */}
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={toggleManualEntry}
+                  className="text-sm text-fg-muted hover:text-fg-primary underline transition-colors duration-200"
+                >
+                  {isManualEntry 
+                    ? "Use address autocomplete instead" 
+                    : "Can't find your property? Enter details manually"
+                  }
+                </button>
+              </div>
             </form>
           </div>
         </div>

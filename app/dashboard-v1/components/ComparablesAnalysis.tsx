@@ -51,7 +51,69 @@ interface ComparablesAnalysisProps {
   nearbyTransactions: ComparableTransaction[]
   subjectPropertySqm: number
   subjectPropertyStreet: string
+  onTransactionSelect?: (transaction: ComparableTransaction) => void
 }
+
+// Helper component for detail rows
+const DetailRow = ({ label, value }: { label: string, value: any }) => (
+  <div className="flex justify-between items-center py-2 border-b border-gray-500/40 last:border-0">
+    <span className="text-gray-400">{label}</span>
+    <span className="text-gray-100 font-medium">{value || 'N/A'}</span>
+  </div>
+)
+
+// Helper function to get street view embed URL
+const getStreetViewEmbedUrl = (latitude?: number, longitude?: number) => {
+  if (!latitude || !longitude) return ''
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+  // Use the correct Street View embed URL format
+  return `https://www.google.com/maps/embed/v1/streetview?key=${apiKey}&location=${latitude},${longitude}&heading=0&pitch=0&fov=90`
+}
+
+// Export function to render transaction details
+export const renderTransactionDetails = (transaction: ComparableTransaction) => (
+  <div className="space-y-6">
+    {/* Location Section - Moved to top */}
+    <div className="bg-black/20 border border-gray-500/30 rounded-lg p-6">
+      <h4 className="font-semibold text-gray-100 mb-4 text-lg">Location</h4>
+      <div className="relative w-full h-64 rounded-lg overflow-hidden border border-gray-500/30">
+        <iframe
+          src={getStreetViewEmbedUrl(transaction.location?.coordinates?.latitude, transaction.location?.coordinates?.longitude)}
+          width="100%"
+          height="100%"
+          style={{ border: 0 }}
+          allowFullScreen
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+        />
+      </div>
+    </div>
+
+    {/* Property Information Section */}
+    <div className="bg-black/20 border border-gray-500/30 rounded-lg p-6">
+      <h4 className="font-semibold text-gray-100 mb-4 text-lg">Property Information</h4>
+      <div className="space-y-3">
+        <DetailRow label="Address" value={transaction.address?.street_group_format?.address_lines} />
+        <DetailRow label="Postcode" value={transaction.address?.street_group_format?.postcode} />
+        <DetailRow label="Property Type" value={transaction.property_type} />
+        <DetailRow label="Bedrooms" value={transaction.number_of_bedrooms} />
+        <DetailRow label="Bathrooms" value={transaction.number_of_bathrooms} />
+        <DetailRow label="Internal Area" value={`${transaction.internal_area_square_metres}m²`} />
+      </div>
+    </div>
+
+    {/* Transaction Details Section */}
+    <div className="bg-black/20 border border-gray-500/30 rounded-lg p-6">
+      <h4 className="font-semibold text-gray-100 mb-4 text-lg">Transaction Details</h4>
+      <div className="space-y-3">
+        <DetailRow label="Sale Price" value={formatCurrency(transaction.price)} />
+        <DetailRow label="Price per m²" value={`£${transaction.price_per_square_metre?.toLocaleString()}`} />
+        <DetailRow label="Transaction Date" value={formatDate(transaction.transaction_date)} />
+        <DetailRow label="Distance" value={getDistanceLabel(transaction.distance_in_metres)} />
+      </div>
+    </div>
+  </div>
+)
 
 // Filter Options
 const BEDROOM_OPTIONS = ['Any', '1', '2', '3', '4', '5+']
@@ -104,10 +166,37 @@ const getDistanceLabel = (distance: number | null | undefined) => {
 
 const isTransactionInDateRange = (transactionDate: string, daysBack: number) => {
   if (daysBack === 0) return true
-  const transaction = new Date(transactionDate)
-  const cutoff = new Date()
-  cutoff.setDate(cutoff.getDate() - daysBack)
-  return transaction >= cutoff
+  
+  // Parse the transaction date (format: YYYY-MM-DD)
+  const transaction = new Date(transactionDate + 'T00:00:00.000Z') // Ensure UTC parsing
+  const now = new Date()
+  const cutoff = new Date(now.getTime() - (daysBack * 24 * 60 * 60 * 1000))
+  
+  // Set time to start of day for accurate comparison
+  cutoff.setHours(0, 0, 0, 0)
+  transaction.setHours(0, 0, 0, 0)
+  
+  // Exclude future dates (transactions should not be in the future)
+  if (transaction > now) {
+    return false
+  }
+  
+  const isInRange = transaction >= cutoff
+  
+  // Debug logging (remove in production)
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Date filter debug:', {
+      transactionDate,
+      daysBack,
+      transaction: transaction.toISOString().split('T')[0],
+      cutoff: cutoff.toISOString().split('T')[0],
+      now: now.toISOString().split('T')[0],
+      isInRange,
+      isFuture: transaction > now
+    })
+  }
+  
+  return isInRange
 }
 
 const isTransactionInDistanceRange = (distance: number, filter: string) => {
@@ -125,30 +214,24 @@ function TransactionCard({
   isSelected, 
   onSelect, 
   onDeselect,
+  onViewDetails,
   dragProps 
 }: {
   transaction: ComparableTransaction
   isSelected: boolean
   onSelect: () => void
   onDeselect: () => void
+  onViewDetails: () => void
   dragProps?: any
 }) {
-  const handleClick = () => {
-    if (isSelected) {
-      onDeselect()
-    } else {
-      onSelect()
-    }
-  }
-
   return (
     <div
       {...dragProps}
-      onClick={handleClick}
-      className={`p-4 rounded-lg border transition-all duration-200 cursor-pointer ${
+      onClick={onViewDetails}
+      className={`relative p-4 rounded-lg border transition-all duration-200 cursor-pointer hover:bg-gray-700/40 hover:border-gray-500/50 ${
         isSelected
           ? 'bg-purple-500/20 border-purple-400/50 shadow-lg'
-          : 'bg-gray-800/30 border-gray-600/30 hover:bg-gray-700/40 hover:border-gray-500/50'
+          : 'bg-gray-800/30 border-gray-600/30'
       }`}
     >
       <div className="flex gap-4">
@@ -157,12 +240,14 @@ function TransactionCard({
           <StreetViewImage
             address={transaction.address?.street_group_format?.address_lines || ''}
             postcode={transaction.address?.street_group_format?.postcode || ''}
+            latitude={transaction.location?.coordinates?.latitude}
+            longitude={transaction.location?.coordinates?.longitude}
             className="w-20 h-20 object-cover rounded-lg"
             size="150x150"
           />
         </div>
         
-        {/* Property Details - Right Side */}
+        {/* Property Details - Middle */}
         <div className="flex-1 min-w-0">
           <div className="flex justify-between items-start mb-2">
             <div className="flex-1">
@@ -177,9 +262,6 @@ function TransactionCard({
               <div className="text-lg font-bold text-white">
                 {formatCurrency(transaction.price)}
               </div>
-              <div className="text-xs text-gray-400">
-                {transaction.price_per_square_metre ? transaction.price_per_square_metre.toLocaleString() : '0'}/m²
-              </div>
             </div>
           </div>
           
@@ -188,12 +270,39 @@ function TransactionCard({
               <span>{transaction.number_of_bedrooms || 0} bed</span>
               <span>{transaction.number_of_bathrooms || 0} bath</span>
               <span>{transaction.property_type || 'Unknown'}</span>
+              <span>{transaction.internal_area_square_metres || 0}m²</span>
             </div>
             <div className="text-right">
               <div>{formatDate(transaction.transaction_date)}</div>
               <div>{getDistanceLabel(transaction.distance_in_metres)}</div>
             </div>
           </div>
+        </div>
+
+        {/* Action Button - Right Side */}
+        <div className="flex-shrink-0 flex items-center">
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              isSelected ? onDeselect() : onSelect()
+            }}
+            className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all backdrop-blur-sm ${
+              isSelected 
+                ? 'bg-red-500/80 text-white hover:bg-red-400/80' 
+                : 'bg-green-500/80 text-white hover:bg-green-400/80'
+            }`}
+            title={isSelected ? 'Remove from comparables' : 'Add to comparables'}
+          >
+            {isSelected ? (
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+            )}
+          </button>
         </div>
       </div>
     </div>
@@ -385,7 +494,8 @@ export default function ComparablesAnalysis({
   uprn, 
   nearbyTransactions, 
   subjectPropertySqm,
-  subjectPropertyStreet 
+  subjectPropertyStreet,
+  onTransactionSelect
 }: ComparablesAnalysisProps) {
   // State
   const [selectedComparableIds, setSelectedComparableIds] = useState<string[]>([])
@@ -398,6 +508,7 @@ export default function ComparablesAnalysis({
     distance: 'any'
   })
   const [savedData, setSavedData] = useState<ComparablesData | null>(null)
+
 
   // Load saved data on mount
   useEffect(() => {
@@ -418,9 +529,9 @@ export default function ComparablesAnalysis({
     loadSavedData()
   }, [uprn])
 
-  // Filter transactions
+  // Filter and sort transactions
   const filteredTransactions = useMemo(() => {
-    return nearbyTransactions.filter(transaction => {
+    const filtered = nearbyTransactions.filter(transaction => {
       // Bedrooms filter
       if (filters.bedrooms !== 'Any') {
         const transactionBeds = transaction.number_of_bedrooms || 0
@@ -467,6 +578,13 @@ export default function ComparablesAnalysis({
       }
 
       return true
+    })
+
+    // Sort by transaction date (most recent first)
+    return filtered.sort((a, b) => {
+      const dateA = new Date(a.transaction_date + 'T00:00:00.000Z')
+      const dateB = new Date(b.transaction_date + 'T00:00:00.000Z')
+      return dateB.getTime() - dateA.getTime() // Most recent first
     })
   }, [nearbyTransactions, filters, subjectPropertyStreet])
 
@@ -543,6 +661,9 @@ export default function ComparablesAnalysis({
     return () => clearTimeout(timeoutId)
   }, [uprn, selectedComparableIds, valuationStrategy, calculatedValuation, savedData])
 
+
+
+
   // Handlers
   const handleSelectComparable = useCallback((id: string) => {
     setSelectedComparableIds(prev => [...prev, id])
@@ -556,13 +677,25 @@ export default function ComparablesAnalysis({
     setValuationStrategy(strategy)
   }, [])
 
+  const handleViewDetails = useCallback((transaction: ComparableTransaction) => {
+    if (onTransactionSelect) {
+      onTransactionSelect(transaction)
+    }
+  }, [onTransactionSelect])
+
+
+
   // Get selected and available transactions
   const availableTransactions = filteredTransactions.filter(t => 
     !selectedComparableIds.includes(t.street_group_property_id)
   )
-  const selectedTransactions = nearbyTransactions.filter(t => 
-    selectedComparableIds.includes(t.street_group_property_id)
-  )
+  const selectedTransactions = nearbyTransactions
+    .filter(t => selectedComparableIds.includes(t.street_group_property_id))
+    .sort((a, b) => {
+      const dateA = new Date(a.transaction_date + 'T00:00:00.000Z')
+      const dateB = new Date(b.transaction_date + 'T00:00:00.000Z')
+      return dateB.getTime() - dateA.getTime() // Most recent first
+    })
 
   if (!nearbyTransactions || nearbyTransactions.length === 0) {
     return (
@@ -590,7 +723,11 @@ export default function ComparablesAnalysis({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Available Transactions */}
         <div className="bg-black/20 backdrop-blur-xl border border-gray-500/30 rounded-xl p-6">
-          {/* Filter Controls - Above Available Transactions Only */}
+          <h3 className="text-lg font-semibold text-gray-100 mb-4">
+            Available Transactions ({availableTransactions.length})
+          </h3>
+          
+          {/* Filter Controls */}
           <FilterControls
             filters={filters}
             onFiltersChange={setFilters}
@@ -598,10 +735,6 @@ export default function ComparablesAnalysis({
             totalCount={nearbyTransactions.length}
             filteredCount={filteredTransactions.length}
           />
-          
-          <h3 className="text-lg font-semibold text-gray-100 mb-4">
-            Available Transactions ({availableTransactions.length})
-          </h3>
           <div className="space-y-3">
             {availableTransactions.map(transaction => (
               <TransactionCard
@@ -610,6 +743,7 @@ export default function ComparablesAnalysis({
                 isSelected={false}
                 onSelect={() => handleSelectComparable(transaction.street_group_property_id)}
                 onDeselect={() => {}}
+                onViewDetails={() => handleViewDetails(transaction)}
               />
             ))}
             {availableTransactions.length === 0 && (
@@ -633,6 +767,7 @@ export default function ComparablesAnalysis({
                 isSelected={true}
                 onSelect={() => {}}
                 onDeselect={() => handleDeselectComparable(transaction.street_group_property_id)}
+                onViewDetails={() => handleViewDetails(transaction)}
               />
             ))}
             {selectedTransactions.length === 0 && (

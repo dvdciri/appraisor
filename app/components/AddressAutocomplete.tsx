@@ -94,6 +94,11 @@ export default function AddressAutocomplete({
 
   // Handle suggestion selection
   const handleSuggestionSelect = async (suggestion: Suggestion) => {
+    console.log('🏠 Property Selected from Autocomplete:')
+    console.log('  Selected Suggestion:', suggestion)
+    console.log('  Place ID:', suggestion.place_id)
+    console.log('  Description:', suggestion.description)
+    
     setInput(suggestion.description)
     setShowSuggestions(false)
     setSuggestions([])
@@ -113,7 +118,11 @@ export default function AddressAutocomplete({
       }
 
       const data = await response.json()
-      console.log('Details API response:', data)
+      console.log('📋 Processed Address Details:')
+      console.log('  Extracted Address:', data.address)
+      console.log('  Extracted Postcode:', data.postcode)
+      console.log('  Full Details Response:', data)
+      
       onAddressSelect(data.address, data.postcode)
     } catch (err) {
       console.error('Error fetching address details:', err)

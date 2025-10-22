@@ -684,8 +684,8 @@ export default function InvestmentCalculator({ uprn }: { uprn: string }) {
     ? (purchasePriceNum - netAdvance)
     : (depositAmount + (!includeFeesInLoan ? productFeeAmount : 0))
   
-  // Calculate total project costs (Cost of Finance + Initial Costs)
-  const totalProjectCosts = costOfFinance + totalInitialCosts
+  // Calculate total project costs (Cost of Finance + Initial Costs + Refurbishment Costs)
+  const totalProjectCosts = costOfFinance + totalInitialCosts + totalRefurbCosts
   
   // Calculate total funding sources
   const totalFundingSources = fundingSources.reduce((total, source) => {
@@ -969,7 +969,7 @@ export default function InvestmentCalculator({ uprn }: { uprn: string }) {
                     label="Gross Loan"
                     percentageValue={bridgingDetails.grossLoanPercent}
                     onPercentageChange={(value) => handlePercentageChange(value, purchasePriceNum, (val) => setBridgingDetails(prev => ({ ...prev, grossLoanPercent: val })), (val) => setBridgingDetails(prev => ({ ...prev, grossLoanAmount: val })))}
-                    amountValue={bridgingDetails.grossLoanAmount}
+                    amountValue={grossLoanAmount.toString()}
                     onAmountChange={(value) => handleAmountChange(value, purchasePriceNum, (val) => setBridgingDetails(prev => ({ ...prev, grossLoanPercent: val })), (val) => setBridgingDetails(prev => ({ ...prev, grossLoanAmount: val })))}
                     baseAmount={purchasePriceNum}
                   />
@@ -1356,6 +1356,10 @@ export default function InvestmentCalculator({ uprn }: { uprn: string }) {
                   <div className="flex justify-between text-xs">
                     <span className="text-gray-400">Initial Costs</span>
                     <span className="text-white">{formatCurrencyDisplay(totalInitialCosts.toString())}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-gray-400">Refurbishment Costs</span>
+                    <span className="text-white">{formatCurrencyDisplay(totalRefurbCosts.toString())}</span>
                   </div>
                   <div className="border-t border-gray-600/30 pt-2 mt-2">
                     <div className="flex justify-between text-sm font-semibold">
