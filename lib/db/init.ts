@@ -58,12 +58,30 @@ export async function initializeDatabase(): Promise<void> {
       console.error('Error creating comparables_data table:', error)
     }
     
+    try {
+      await query(`
+        CREATE TABLE IF NOT EXISTS subscriptions (
+            id SERIAL PRIMARY KEY,
+            email VARCHAR(255) UNIQUE NOT NULL,
+            is_first_n_subscriber BOOLEAN DEFAULT FALSE,
+            sendfox_contact_id VARCHAR(255) NULL,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        )
+      `)
+      console.log('Created/verified subscriptions table')
+    } catch (error) {
+      console.error('Error creating subscriptions table:', error)
+    }
+    
     // Create indexes separately
     try {
       await query('CREATE INDEX IF NOT EXISTS idx_properties_uprn ON properties(uprn)')
       await query('CREATE INDEX IF NOT EXISTS idx_properties_user_id ON properties(user_id)')
       await query('CREATE INDEX IF NOT EXISTS idx_calculator_data_user_id ON calculator_data(user_id)')
       await query('CREATE INDEX IF NOT EXISTS idx_comparables_data_user_id ON comparables_data(user_id)')
+      await query('CREATE INDEX IF NOT EXISTS idx_subscriptions_email ON subscriptions(email)')
+      await query('CREATE INDEX IF NOT EXISTS idx_subscriptions_created_at ON subscriptions(created_at)')
       console.log('Created/verified indexes')
     } catch (error) {
       console.error('Error creating indexes:', error)
@@ -84,10 +102,10 @@ export async function checkDatabaseHealth(): Promise<boolean> {
       SELECT table_name 
       FROM information_schema.tables 
       WHERE table_schema = 'public' 
-      AND table_name IN ('properties', 'calculator_data', 'comparables_data')
+      AND table_name IN ('properties', 'calculator_data', 'comparables_data', 'subscriptions')
     `)
     
-    const expectedTables = ['properties', 'calculator_data', 'comparables_data']
+    const expectedTables = ['properties', 'calculator_data', 'comparables_data', 'subscriptions']
     const existingTables = result.rows.map((row: any) => row.table_name)
     
     const allTablesExist = expectedTables.every(table => existingTables.includes(table))

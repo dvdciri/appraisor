@@ -1,15 +1,42 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Head from 'next/head'
 import Image from 'next/image'
+import { CONFIG } from '@/lib/config'
 
 export default function LandingPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+  const [subscriberCount, setSubscriberCount] = useState<{
+    subscriber_count: number
+    max_free_spots: number
+    remaining_spots: number
+    is_first_100: boolean
+  } | null>(null)
+  const [loadingCount, setLoadingCount] = useState(true)
+
+  // Fetch subscriber count on component mount
+  useEffect(() => {
+    const fetchSubscriberCount = async () => {
+      try {
+        const response = await fetch('/api/subscribers')
+        if (response.ok) {
+          const data = await response.json()
+          setSubscriberCount(data)
+        }
+      } catch (error) {
+        console.error('Error fetching subscriber count:', error)
+      } finally {
+        setLoadingCount(false)
+      }
+    }
+
+    fetchSubscriberCount()
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -43,6 +70,13 @@ export default function LandingPage() {
       if (response.ok) {
         setMessage({ type: 'success', text: data.message })
         setEmail('') // Clear form after successful submission
+        
+        // Refresh subscriber count after successful subscription
+        const countResponse = await fetch('/api/subscribers')
+        if (countResponse.ok) {
+          const countData = await countResponse.json()
+          setSubscriberCount(countData)
+        }
       } else {
         setMessage({ type: 'error', text: data.error || 'Something went wrong. Please try again.' })
       }
@@ -212,6 +246,22 @@ export default function LandingPage() {
                 <p className="text-lg text-white mb-6">
                 Get free credits when you sign up for early access!
                 </p>
+
+                {/* Subscriber Counter */}
+                {!loadingCount && subscriberCount && (
+                  <div className="mb-6 text-center">
+                    <div className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500/20 to-red-500/20 backdrop-blur-sm border border-orange-400/30 rounded-full px-4 py-2">
+                      <span className="text-orange-300 text-sm font-medium">
+                        🔥 {subscriberCount.subscriber_count}/{subscriberCount.max_free_spots} free credit spots taken
+                      </span>
+                    </div>                  
+                    {subscriberCount.remaining_spots === 0 && (
+                      <p className="text-orange-300 text-sm mt-2 font-medium">
+                        All free spots claimed! You can still join the waitlist to get early access.
+                      </p>
+                    )}
+                  </div>
+                )}
                 
                 {/* Email Capture Form */}
                 <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3" aria-label="Sign up for early access">

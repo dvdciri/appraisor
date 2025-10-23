@@ -32,11 +32,23 @@ CREATE TABLE IF NOT EXISTS comparables_data (
     user_id UUID NULL -- For future multi-user support
 );
 
+-- Subscriptions table: Track email subscriptions for early access
+CREATE TABLE IF NOT EXISTS subscriptions (
+    id SERIAL PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    is_first_n_subscriber BOOLEAN DEFAULT FALSE,
+    sendfox_contact_id VARCHAR(255) NULL, -- Store SendFox contact ID for reference
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_properties_user_id ON properties(user_id);
 CREATE INDEX IF NOT EXISTS idx_properties_last_fetched ON properties(last_fetched);
 CREATE INDEX IF NOT EXISTS idx_calculator_data_user_id ON calculator_data(user_id);
 CREATE INDEX IF NOT EXISTS idx_comparables_data_user_id ON comparables_data(user_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_email ON subscriptions(email);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_created_at ON subscriptions(created_at);
 
 -- Function to update the updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -55,4 +67,7 @@ CREATE TRIGGER update_calculator_data_updated_at BEFORE UPDATE ON calculator_dat
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_comparables_data_updated_at BEFORE UPDATE ON comparables_data
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_subscriptions_updated_at BEFORE UPDATE ON subscriptions
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
