@@ -23,7 +23,13 @@ export default function LandingPage() {
   useEffect(() => {
     const fetchSubscriberCount = async () => {
       try {
-        const response = await fetch('/api/subscribers')
+        const response = await fetch('/api/subscribers', {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        })
         if (response.ok) {
           const data = await response.json()
           setSubscriberCount(data)
@@ -72,7 +78,13 @@ export default function LandingPage() {
         setEmail('') // Clear form after successful submission
         
         // Refresh subscriber count after successful subscription
-        const countResponse = await fetch('/api/subscribers')
+        const countResponse = await fetch('/api/subscribers', {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        })
         if (countResponse.ok) {
           const countData = await countResponse.json()
           setSubscriberCount(countData)
