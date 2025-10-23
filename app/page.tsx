@@ -197,21 +197,21 @@ export default function LandingPage() {
           <div className="w-full max-w-4xl">
             <section className="text-center mb-12" aria-labelledby="hero-heading">
               {/* Hero Section */}
-              <h1 id="hero-heading" className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight">
-                All your UK property insights,
-                <br />
-                <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                  in one search.
-                </span>
-              </h1>
-              
-              <p className="text-xl md:text-2xl text-gray-300 mb-20 max-w-3xl mx-auto leading-relaxed">
-                Appraisor gives you instant access to over 45 data points, automatic valuations, AI-driven insights, AI refurbishment estimator, and tools to help you buy and sell smarter.
-              </p>
+                <h1 id="hero-heading" className="text-4xl md:text-6xl font-bold text-white mb-8 leading-tight">
+                  All your UK property insights,
+                  <br />
+                  <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                    in one search.
+                  </span>
+                </h1>
+                
+                <p className="text-xl md:text-2xl text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed">
+                  Appraisor gives you instant access to over 45 data points, automatic valuations, AI-driven insights, AI refurbishment estimator, and tools to help you buy and sell smarter.
+                </p>
 
               <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 backdrop-blur-sm border border-purple-400/30 rounded-2xl p-6 mb-8 max-w-2xl mx-auto">
                 <p className="text-lg text-white mb-6">
-                  Sign up for early access and get free credits when we go live.
+                Get free credits when you sign up for early access!
                 </p>
                 
                 {/* Email Capture Form */}
@@ -234,7 +234,7 @@ export default function LandingPage() {
                     className="px-8 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                     aria-label={loading ? 'Signing up, please wait' : 'Get free credits and early access'}
                   >
-                    {loading ? 'Signing Up...' : 'Get Free Credits'}
+                    {loading ? 'Signing Up...' : 'Sign Up'}
                   </button>
                 </form>
                 <p id="email-help" className="sr-only">Enter your email address to receive free credits when we launch</p>
@@ -253,7 +253,7 @@ export default function LandingPage() {
             </section>
 
             {/* Features Section */}
-            <section className="text-center mb-8 mt-20" aria-labelledby="features-heading">
+            <section className="text-center mb-8 mt-28" aria-labelledby="features-heading">
               <h2 id="features-heading" className="text-3xl font-bold text-white mb-4">What You'll Get</h2>
               <p className="text-gray-300 text-lg">Powerful tools to make smarter property decisions</p>
             </section>
@@ -298,11 +298,11 @@ export default function LandingPage() {
     </main>
 
         {/* Footer */}
-        <footer className="p-6 text-center" role="contentinfo">
-          <p className="text-gray-400 text-base mb-3">
+        <footer className="p-6 mt-8 text-center" role="contentinfo">
+          <p className="text-gray-400 text-base mb-8">
             Built by Property Investors for Property Investors ❤️
           </p>
-          <p className="text-gray-400 text-sm">
+          <p className="text-gray-400 text-sm mb-8">
             Questions? Contact us at{' '}
             <a 
               href="mailto:info@doorlyproperties.com" 

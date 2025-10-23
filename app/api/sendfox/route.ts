@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { 
         success: true, 
-        message: 'Successfully subscribed! You\'ll receive free credits when we launch.' 
+        message: 'Thank you! We\'ll be in touch soon with your free credits.' 
       },
       { status: 200 }
     )
