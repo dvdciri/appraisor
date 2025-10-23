@@ -20,10 +20,14 @@ export async function GET(request: NextRequest) {
       { status: 200 }
     )
 
-    // Add cache-busting headers to ensure fresh data
-    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
+    // Add aggressive cache-busting headers for production
+    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate, private')
     response.headers.set('Pragma', 'no-cache')
     response.headers.set('Expires', '0')
+    response.headers.set('Surrogate-Control', 'no-store')
+    response.headers.set('Vary', '*')
+    response.headers.set('Last-Modified', new Date().toUTCString())
+    response.headers.set('ETag', `"${Date.now()}"`)
 
     return response
 
