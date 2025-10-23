@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { CONFIG } from '@/lib/config'
 import { getClient } from '@/lib/db/client'
 
+// Force dynamic rendering - prevents caching at edge/CDN level
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export async function GET(request: NextRequest) {
   try {
     const db = await getClient()
