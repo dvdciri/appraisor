@@ -509,6 +509,29 @@ export default function ComparablesAnalysis({
   })
   const [savedData, setSavedData] = useState<ComparablesData | null>(null)
 
+  // Deduplicate transactions - keep only most recent per property
+  const deduplicatedTransactions = useMemo(() => {
+    const transactionMap = new Map<string, ComparableTransaction>()
+    
+    nearbyTransactions.forEach(transaction => {
+      const id = transaction.street_group_property_id
+      const existing = transactionMap.get(id)
+      
+      if (!existing) {
+        transactionMap.set(id, transaction)
+      } else {
+        // Keep the most recent transaction
+        const existingDate = new Date(existing.transaction_date + 'T00:00:00.000Z')
+        const currentDate = new Date(transaction.transaction_date + 'T00:00:00.000Z')
+        
+        if (currentDate > existingDate) {
+          transactionMap.set(id, transaction)
+        }
+      }
+    })
+    
+    return Array.from(transactionMap.values())
+  }, [nearbyTransactions])
 
   // Load saved data on mount
   useEffect(() => {
@@ -531,21 +554,29 @@ export default function ComparablesAnalysis({
 
   // Filter and sort transactions
   const filteredTransactions = useMemo(() => {
-    const filtered = nearbyTransactions.filter(transaction => {
+    const filtered = deduplicatedTransactions.filter(transaction => {
       // Bedrooms filter
       if (filters.bedrooms !== 'Any') {
         const transactionBeds = transaction.number_of_bedrooms || 0
         const filterBeds = filters.bedrooms === '5+' ? 5 : parseInt(filters.bedrooms)
-        if (filters.bedrooms === '5+' && transactionBeds < 5) return false
-        if (filters.bedrooms !== '5+' && transactionBeds !== filterBeds) return false
+        
+        if (filters.bedrooms === '5+') {
+          if (transactionBeds < 5) return false
+        } else {
+          if (transactionBeds !== filterBeds) return false
+        }
       }
 
       // Bathrooms filter
       if (filters.bathrooms !== 'Any') {
         const transactionBaths = transaction.number_of_bathrooms || 0
         const filterBaths = filters.bathrooms === '4+' ? 4 : parseInt(filters.bathrooms)
-        if (filters.bathrooms === '4+' && transactionBaths < 4) return false
-        if (filters.bathrooms !== '4+' && transactionBaths !== filterBaths) return false
+        
+        if (filters.bathrooms === '4+') {
+          if (transactionBaths < 4) return false
+        } else {
+          if (transactionBaths !== filterBaths) return false
+        }
       }
 
       // Date filter
@@ -586,18 +617,18 @@ export default function ComparablesAnalysis({
       const dateB = new Date(b.transaction_date + 'T00:00:00.000Z')
       return dateB.getTime() - dateA.getTime() // Most recent first
     })
-  }, [nearbyTransactions, filters, subjectPropertyStreet])
+  }, [deduplicatedTransactions, filters, subjectPropertyStreet])
 
   // Get unique property types for filter
   const propertyTypes = useMemo(() => {
-    return Array.from(new Set(nearbyTransactions.map(t => t.property_type || 'Unknown'))).sort()
-  }, [nearbyTransactions])
+    return Array.from(new Set(deduplicatedTransactions.map(t => t.property_type || 'Unknown'))).sort()
+  }, [deduplicatedTransactions])
 
   // Calculate valuation
   const calculatedValuation = useMemo(() => {
     if (selectedComparableIds.length === 0) return null
 
-    const selectedTransactions = nearbyTransactions.filter(t => 
+    const selectedTransactions = deduplicatedTransactions.filter(t => 
       selectedComparableIds.includes(t.street_group_property_id)
     )
 
@@ -617,9 +648,9 @@ export default function ComparablesAnalysis({
       const avgPricePerSqm = totalPricePerSqm / validTransactions.length
       return avgPricePerSqm * subjectPropertySqm
     }
-  }, [selectedComparableIds, nearbyTransactions, valuationStrategy, subjectPropertySqm])
+  }, [selectedComparableIds, deduplicatedTransactions, valuationStrategy, subjectPropertySqm])
 
-  // Save data with debouncing
+  // Save data with debouncing - only save when user makes changes, not on calculated values
   useEffect(() => {
     const saveData = async () => {
       if (!savedData) return // Don't save until we've loaded initial data
@@ -628,8 +659,7 @@ export default function ComparablesAnalysis({
         console.log('Saving comparables data:', {
           uprn,
           selected_comparable_ids: selectedComparableIds,
-          valuation_strategy: valuationStrategy,
-          calculated_valuation: calculatedValuation
+          valuation_strategy: valuationStrategy
         })
         
         const response = await fetch('/api/db/comparables', {
@@ -657,12 +687,22 @@ export default function ComparablesAnalysis({
       }
     }
 
-    const timeoutId = setTimeout(saveData, 500) // Debounce saves
+    const timeoutId = setTimeout(saveData, 1000) // Increased debounce to 1 second
     return () => clearTimeout(timeoutId)
-  }, [uprn, selectedComparableIds, valuationStrategy, calculatedValuation, savedData])
+  }, [uprn, selectedComparableIds, valuationStrategy, savedData]) // Removed calculatedValuation from dependencies
 
-
-
+  // Debug logging in development
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Comparables Debug:', {
+        totalTransactions: nearbyTransactions.length,
+        deduplicatedCount: deduplicatedTransactions.length,
+        duplicatesRemoved: nearbyTransactions.length - deduplicatedTransactions.length,
+        filteredCount: filteredTransactions.length,
+        selectedCount: selectedComparableIds.length
+      })
+    }
+  }, [nearbyTransactions, deduplicatedTransactions, filteredTransactions, selectedComparableIds])
 
   // Handlers
   const handleSelectComparable = useCallback((id: string) => {
@@ -689,7 +729,7 @@ export default function ComparablesAnalysis({
   const availableTransactions = filteredTransactions.filter(t => 
     !selectedComparableIds.includes(t.street_group_property_id)
   )
-  const selectedTransactions = nearbyTransactions
+  const selectedTransactions = deduplicatedTransactions
     .filter(t => selectedComparableIds.includes(t.street_group_property_id))
     .sort((a, b) => {
       const dateA = new Date(a.transaction_date + 'T00:00:00.000Z')
@@ -697,7 +737,7 @@ export default function ComparablesAnalysis({
       return dateB.getTime() - dateA.getTime() // Most recent first
     })
 
-  if (!nearbyTransactions || nearbyTransactions.length === 0) {
+  if (!deduplicatedTransactions || deduplicatedTransactions.length === 0) {
     return (
       <div className="bg-black/20 backdrop-blur-xl border border-gray-500/30 rounded-2xl p-6 shadow-2xl">
         <div className="text-center py-12">
@@ -732,7 +772,7 @@ export default function ComparablesAnalysis({
             filters={filters}
             onFiltersChange={setFilters}
             propertyTypes={propertyTypes}
-            totalCount={nearbyTransactions.length}
+            totalCount={deduplicatedTransactions.length}
             filteredCount={filteredTransactions.length}
           />
           <div className="space-y-3">

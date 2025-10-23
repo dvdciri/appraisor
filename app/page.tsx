@@ -300,7 +300,7 @@ export default function Home() {
                     onAddressSelect={handleAddressSelect}
                     onChange={handleAddressChange}
                     value={fullAddress}
-                    placeholder="Enter property address"
+                    placeholder="Start typing address.."
                   />
                 </div>
               ) : (

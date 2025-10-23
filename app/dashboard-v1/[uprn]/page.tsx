@@ -73,7 +73,26 @@ const OwnershipDataDisplay = ({ propertyData, getPropertyValue }: { propertyData
         <div className="flex justify-between items-center py-2">
           <span className="text-gray-400">Occupancy</span>
           <span className="text-gray-100 font-medium">
-            {getPropertyValue('occupancy') !== 'N/A' ? getPropertyValue('occupancy') : 'Unspecified'}
+            {(() => {
+              const occupancyValue = getPropertyValue('occupancy')
+              if (occupancyValue === 'N/A' || occupancyValue === null || occupancyValue === undefined) {
+                return 'Unspecified'
+              }
+              // Handle object values
+              if (typeof occupancyValue === 'object') {
+                // If it has occupancy_type, use that
+                if (occupancyValue.occupancy_type) {
+                  return occupancyValue.occupancy_type
+                }
+                // If it has owner_occupied boolean, convert to text
+                if (typeof occupancyValue.owner_occupied === 'boolean') {
+                  return occupancyValue.owner_occupied ? 'Owner Occupied' : 'Not Owner Occupied'
+                }
+                // Fallback to string representation
+                return JSON.stringify(occupancyValue)
+              }
+              return occupancyValue
+            })()}
           </span>
         </div>
         {getPropertyValue('tenure.tenure_type') === 'N/A' && 
