@@ -4,5 +4,6 @@ declare namespace NodeJS {
     DATABASE_URL: string;
     STREET_API_KEY: string;
     NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: string;
+    SEND_FOX_API_KEY: string;
   }
 }

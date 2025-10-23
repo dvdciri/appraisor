@@ -2,8 +2,8 @@ import './globals.css'
 import DatabaseInitializer from './components/DatabaseInitializer'
 
 export const metadata = {
-  title: 'UK Property Investment Analysis',
-  description: 'Analyze UK investment properties with detailed insights',
+  title: 'Appraisor - All Your Property Insights in One Search',
+  description: 'Get instant access to over 45 data points, automatic valuations, AI-driven insights, and tools to help you buy and sell smarter. Sign up for early access.',
 }
 
 export default function RootLayout({

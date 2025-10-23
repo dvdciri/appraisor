@@ -1076,7 +1076,7 @@ export default function DashboardV1() {
           {/* Back to Search Button - First Item */}
           <div className="p-3">
             <button
-              onClick={() => router.push('/')}
+              onClick={() => router.push('/search')}
               className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-gray-500/15 hover:bg-gray-500/25 transition-colors text-gray-400 hover:text-gray-200"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1496,7 +1496,7 @@ export default function DashboardV1() {
               setRightPanelOpen(false)
               setActiveSubsection(null)
             }}
-            title={subsections[activeSection]?.find(s => s.id === activeSubsection)?.label || 'Property Details'}
+            title={subsections[activeSection as keyof typeof subsections]?.find((s: any) => s.id === activeSubsection)?.label || 'Property Details'}
             isLargeScreen={isLargeScreen}
           >
             <div className="space-y-6">
