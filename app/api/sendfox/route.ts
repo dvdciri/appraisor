@@ -108,11 +108,17 @@ export async function POST(request: NextRequest) {
     // Save subscription to our database
     try {
       const db = await getClient()
-      await db.query(
-        'INSERT INTO subscriptions (email, is_first_n_subscriber, sendfox_contact_id) VALUES ($1, $2, $3) ON CONFLICT (email) DO NOTHING',
+      const insertResult = await db.query(
+        'INSERT INTO subscriptions (email, is_first_n_subscriber, sendfox_contact_id) VALUES ($1, $2, $3) ON CONFLICT (email) DO NOTHING RETURNING id',
         [email.toLowerCase().trim(), isFirstNSubscriber, sendFoxData.id || null]
       )
-      console.log('Successfully saved subscription to database')
+      console.log('Database save result:', {
+        email: email.toLowerCase().trim(),
+        isFirstN: isFirstNSubscriber,
+        sendfoxId: sendFoxData.id || null,
+        insertResult: insertResult.rows,
+        timestamp: new Date().toISOString()
+      })
     } catch (dbError) {
       console.error('Error saving subscription to database:', dbError)
       // Don't fail the request if database save fails, but log it

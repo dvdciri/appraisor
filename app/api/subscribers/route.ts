@@ -10,6 +10,15 @@ export async function GET(request: NextRequest) {
     const result = await db.query('SELECT COUNT(*) as total FROM subscriptions')
     const subscriberCount = parseInt(result.rows[0].total) || 0
     
+    // Debug logging for production
+    console.log('Subscribers API Debug:', {
+      environment: process.env.NODE_ENV,
+      rawCount: result.rows[0].total,
+      parsedCount: subscriberCount,
+      maxFreeSpots: CONFIG.MAX_FREE_SPOTS,
+      timestamp: new Date().toISOString()
+    })
+    
     const response = NextResponse.json(
       { 
         subscriber_count: subscriberCount,
