@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '../../../../lib/db/client'
+import { ensureAppReady } from '@/lib/db/startup'
 
 // GET - fetch calculator data by UPRN
 export async function GET(request: NextRequest) {
   try {
+    // Ensure database is ready before processing
+    await ensureAppReady()
+    
     const { searchParams } = new URL(request.url)
     const uprn = searchParams.get('uprn') || searchParams.get('id') // Backward compatibility
 
@@ -43,6 +47,9 @@ export async function GET(request: NextRequest) {
 // POST - save/update calculator data
 export async function POST(request: NextRequest) {
   try {
+    // Ensure database is ready before processing
+    await ensureAppReady()
+    
     const { uprn, analysisId, data } = await request.json()
     const propertyUprn = uprn || analysisId // Backward compatibility
 

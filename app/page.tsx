@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Head from 'next/head'
+import Image from 'next/image'
 
 export default function LandingPage() {
   const router = useRouter()
@@ -22,8 +23,8 @@ export default function LandingPage() {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
       setMessage({ type: 'error', text: 'Please enter a valid email address' })
-      return
-    }
+        return
+      }
 
     setLoading(true)
     setMessage(null)
@@ -36,7 +37,7 @@ export default function LandingPage() {
         },
         body: JSON.stringify({ email: email.trim() }),
       })
-
+      
       const data = await response.json()
 
       if (response.ok) {
@@ -63,7 +64,7 @@ export default function LandingPage() {
     { icon: '💳', title: 'Simple Pay-As-You-Go Pricing', description: 'No subscriptions, no hidden fees. You only pay for what you use with transparent credit-based pricing.', isFullWidth: true },
   ]
 
-  return (
+        return (
     <>
       <Head>
         <title>Appraisor - All Your UK Property Insights in One Search</title>
@@ -72,6 +73,7 @@ export default function LandingPage() {
         <meta name="author" content="Appraisor" />
         <meta name="robots" content="index, follow" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="icon" href="/favicon.ico" />
         
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
@@ -176,8 +178,14 @@ export default function LandingPage() {
         <header className="p-6" role="banner">
           <div className="flex items-center justify-center">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg" aria-label="Appraisor logo">
-                <span className="text-lg font-bold text-white">A</span>
+              <div className="w-10 h-10 rounded-xl shadow-lg overflow-hidden" aria-label="Appraisor logo">
+                <Image
+                  src="/logo.png"
+                  alt="Appraisor Logo"
+                  width={40}
+                  height={40}
+                  className="w-full h-full object-cover"
+                />
               </div>
               <span className="text-2xl font-bold text-white">Appraisor</span>
             </div>
@@ -252,7 +260,7 @@ export default function LandingPage() {
 
             {/* Full Width Pricing Feature */}
             {features.find(f => f.isFullWidth) && (
-              <div className="bg-black/20 backdrop-blur-xl border border-gray-500/30 rounded-xl p-6 hover:bg-black/30 transition-all duration-200 animate-enter-subtle mb-8">
+              <div className="bg-black/20 backdrop-blur-xl border border-gray-500/30 rounded-xl p-6 hover:bg-black/30 transition-all duration-200 animate-enter-subtle mb-4 md:mb-8">
                 <div className="flex items-center justify-center gap-3 mb-3">
                   <div className="text-3xl">💳</div>
                   <h3 className="text-lg font-semibold text-white">{features.find(f => f.isFullWidth)?.title}</h3>
@@ -264,7 +272,7 @@ export default function LandingPage() {
             )}
 
             {/* Features Preview */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8" role="list">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6 mb-4 md:mb-8" role="list">
               {features.filter(f => !f.isFullWidth).map((feature, index) => (
                 <article
                   key={index}
@@ -278,19 +286,22 @@ export default function LandingPage() {
                 </article>
               ))}
             </div>
-
+            
             {/* And Much More */}
             <div className="text-center">
               <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 backdrop-blur-sm border border-purple-400/30 rounded-full px-6 py-3">
                 <span className="text-2xl" aria-hidden="true">✨</span>
-                <span className="text-white font-medium">...and much more.</span>
-              </div>
-            </div>
+                <span className="text-white font-medium">and much more...</span>
           </div>
-        </main>
+        </div>
+      </div>
+    </main>
 
         {/* Footer */}
         <footer className="p-6 text-center" role="contentinfo">
+          <p className="text-gray-400 text-base mb-3">
+            Built by Property Investors for Property Investors ❤️
+          </p>
           <p className="text-gray-400 text-sm">
             Questions? Contact us at{' '}
             <a 

@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "init-db": "node scripts/init-db.js",
+    "dev:init": "npm run init-db && npm run dev"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

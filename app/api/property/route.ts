@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import fs from 'fs'
 import path from 'path'
+import { ensureAppReady } from '@/lib/db/startup'
 
 export async function POST(request: NextRequest) {
   try {
+    // Ensure database is ready before processing
+    await ensureAppReady()
+    
     const { address, postcode } = await request.json()
 
     const realData = await fetchRealPropertyDetails(address, postcode)

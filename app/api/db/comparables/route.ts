@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '../../../../lib/db/client'
+import { ensureAppReady } from '@/lib/db/startup'
 
 export async function GET(request: NextRequest) {
   try {
+    // Ensure database is ready before processing
+    await ensureAppReady()
+    
     const { searchParams } = new URL(request.url)
     const uprn = searchParams.get('uprn')
 
@@ -37,6 +41,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Ensure database is ready before processing
+    await ensureAppReady()
+    
     const body = await request.json()
     const { uprn, selected_comparable_ids, valuation_strategy, calculated_valuation } = body
 
