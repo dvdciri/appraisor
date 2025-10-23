@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Head from 'next/head'
 
 export default function LandingPage() {
   const router = useRouter()
@@ -63,7 +64,57 @@ export default function LandingPage() {
   ]
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
+    <>
+      <Head>
+        <title>Appraisor - All Your UK Property Insights in One Search</title>
+        <meta name="description" content="Get instant access to over 45 data points, automatic valuations, AI-driven insights, AI refurbishment estimator, and tools to help you buy and sell smarter. Pay-as-you-go credits, no subscription required." />
+        <meta name="keywords" content="property analysis, UK property data, property valuation, AI refurbishment estimator, property investment, real estate insights, property comparables, market analysis" />
+        <meta name="author" content="Appraisor" />
+        <meta name="robots" content="index, follow" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        
+        {/* Open Graph / Facebook */}
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content="Appraisor - All Your UK Property Insights in One Search" />
+        <meta property="og:description" content="Get instant access to over 45 data points, automatic valuations, AI-driven insights, and tools to help you buy and sell smarter. Sign up for early access and get free credits." />
+        <meta property="og:site_name" content="Appraisor" />
+        
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Appraisor - All Your UK Property Insights in One Search" />
+        <meta name="twitter:description" content="Get instant access to over 45 data points, automatic valuations, AI-driven insights, and tools to help you buy and sell smarter." />
+        
+        {/* Structured Data */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "SoftwareApplication",
+              "name": "Appraisor",
+              "description": "All your UK property insights in one search. Get instant access to over 45 data points, automatic valuations, AI-driven insights, and tools to help you buy and sell smarter.",
+              "applicationCategory": "BusinessApplication",
+              "operatingSystem": "Web",
+              "offers": {
+                "@type": "Offer",
+                "price": "0",
+                "priceCurrency": "GBP",
+                "description": "Pay-as-you-go credits, no subscription required"
+              },
+              "featureList": [
+                "45+ Data Points in One Search",
+                "AI Refurbishment Estimator", 
+                "Multi-Exit Calculators with AI Assistant",
+                "Market Insights",
+                "Environmental Risk Assessment",
+                "Automatic Comparables & Valuations"
+              ]
+            })
+          }}
+        />
+      </Head>
+      
+      <div className="min-h-screen relative overflow-hidden">
       {/* Deep Space Base */}
       <div className="absolute inset-0 bg-gradient-to-br from-black via-gray-900 to-purple-900" />
       
@@ -122,10 +173,10 @@ export default function LandingPage() {
       {/* Content */}
       <div className="relative z-10 min-h-screen flex flex-col">
         {/* Header */}
-        <header className="p-6">
+        <header className="p-6" role="banner">
           <div className="flex items-center justify-center">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg">
+              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg" aria-label="Appraisor logo">
                 <span className="text-lg font-bold text-white">A</span>
               </div>
               <span className="text-2xl font-bold text-white">Appraisor</span>
@@ -134,15 +185,15 @@ export default function LandingPage() {
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 flex items-center justify-center px-6 py-8">
+        <main className="flex-1 flex items-center justify-center px-6 py-8" role="main">
           <div className="w-full max-w-4xl">
-            <div className="text-center mb-12">
+            <section className="text-center mb-12" aria-labelledby="hero-heading">
               {/* Hero Section */}
-              <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight">
+              <h1 id="hero-heading" className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight">
                 All your UK property insights,
                 <br />
                 <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                 in one search.
+                  in one search.
                 </span>
               </h1>
               
@@ -156,23 +207,29 @@ export default function LandingPage() {
                 </p>
                 
                 {/* Email Capture Form */}
-                <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
+                <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3" aria-label="Sign up for early access">
+                  <label htmlFor="email-input" className="sr-only">Email address</label>
                   <input
+                    id="email-input"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Enter your email address"
                     className="flex-1 px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
                     disabled={loading}
+                    required
+                    aria-describedby="email-help"
                   />
                   <button
                     type="submit"
                     disabled={loading}
                     className="px-8 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                    aria-label={loading ? 'Signing up, please wait' : 'Get free credits and early access'}
                   >
                     {loading ? 'Signing Up...' : 'Get Free Credits'}
                   </button>
                 </form>
+                <p id="email-help" className="sr-only">Enter your email address to receive free credits when we launch</p>
 
                 {/* Message Display */}
                 {message && (
@@ -185,15 +242,13 @@ export default function LandingPage() {
                   </div>
                 )}
               </div>
-
-
-            </div>
+            </section>
 
             {/* Features Section */}
-            <div className="text-center mb-8 mt-20">
-              <h2 className="text-3xl font-bold text-white mb-4">What You'll Get</h2>
+            <section className="text-center mb-8 mt-20" aria-labelledby="features-heading">
+              <h2 id="features-heading" className="text-3xl font-bold text-white mb-4">What You'll Get</h2>
               <p className="text-gray-300 text-lg">Powerful tools to make smarter property decisions</p>
-            </div>
+            </section>
 
             {/* Full Width Pricing Feature */}
             {features.find(f => f.isFullWidth) && (
@@ -209,24 +264,25 @@ export default function LandingPage() {
             )}
 
             {/* Features Preview */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8" role="list">
               {features.filter(f => !f.isFullWidth).map((feature, index) => (
-                <div
+                <article
                   key={index}
                   className="bg-black/20 backdrop-blur-xl border border-gray-500/30 rounded-xl p-6 hover:bg-black/30 transition-all duration-200 animate-enter-subtle"
                   style={{ animationDelay: `${index * 0.1}s` }}
+                  role="listitem"
                 >
-                  <div className="text-3xl mb-3">{feature.icon}</div>
+                  <div className="text-3xl mb-3" aria-hidden="true">{feature.icon}</div>
                   <h3 className="text-lg font-semibold text-white mb-2">{feature.title}</h3>
                   <p className="text-gray-400 text-sm leading-relaxed">{feature.description}</p>
-                </div>
+                </article>
               ))}
             </div>
 
             {/* And Much More */}
             <div className="text-center">
               <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 backdrop-blur-sm border border-purple-400/30 rounded-full px-6 py-3">
-                <span className="text-2xl">✨</span>
+                <span className="text-2xl" aria-hidden="true">✨</span>
                 <span className="text-white font-medium">...and much more.</span>
               </div>
             </div>
@@ -234,12 +290,13 @@ export default function LandingPage() {
         </main>
 
         {/* Footer */}
-        <footer className="p-6 text-center">
+        <footer className="p-6 text-center" role="contentinfo">
           <p className="text-gray-400 text-sm">
             Questions? Contact us at{' '}
             <a 
               href="mailto:info@doorlyproperties.com" 
               className="text-purple-400 hover:text-purple-300 transition-colors"
+              aria-label="Contact us via email"
             >
               info@doorlyproperties.com
             </a>
@@ -247,5 +304,6 @@ export default function LandingPage() {
         </footer>
       </div>
     </div>
+    </>
   )
 }
