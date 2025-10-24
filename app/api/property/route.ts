@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import fs from 'fs'
 import path from 'path'
+import { getServerSession } from 'next-auth'
+import { query } from '@/lib/db/client'
 import { ensureAppReady } from '@/lib/db/startup'
 
 export async function POST(request: NextRequest) {
@@ -8,9 +10,47 @@ export async function POST(request: NextRequest) {
     // Ensure database is ready before processing
     await ensureAppReady()
     
+    // Check authentication
+    const session = await getServerSession()
+    if (!session?.user?.email) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+    
     const { address, postcode } = await request.json()
 
     const realData = await fetchRealPropertyDetails(address, postcode)
+    
+    // Record search in user search history
+    try {
+      // Get user_id from database
+      const userResult = await query(
+        'SELECT user_id FROM users WHERE email = $1',
+        [session.user.email]
+      )
+
+      if (userResult.rows.length > 0) {
+        const userId = userResult.rows[0].user_id
+        const uprn = realData?.data?.attributes?.identities?.ordnance_survey?.uprn
+
+        if (uprn) {
+          // Insert search history record
+          await query(`
+            INSERT INTO user_search_history (user_id, uprn)
+            VALUES ($1, $2)
+            ON CONFLICT (user_id, uprn) 
+            DO UPDATE SET searched_at = NOW()
+          `, [userId, uprn])
+          
+          console.log(`Recorded search for user ${userId}, UPRN: ${uprn}`)
+        }
+      }
+    } catch (historyError) {
+      console.error('Error recording search history:', historyError)
+      // Don't fail the main request if history recording fails
+    }
     
     return NextResponse.json(realData)
   } catch (error: any) {

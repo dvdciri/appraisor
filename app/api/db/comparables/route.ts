@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
 import { query } from '../../../../lib/db/client'
 import { ensureAppReady } from '@/lib/db/startup'
 
@@ -7,6 +8,15 @@ export async function GET(request: NextRequest) {
     // Ensure database is ready before processing
     await ensureAppReady()
     
+    // Check authentication
+    const session = await getServerSession()
+    if (!session?.user?.email) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+    
     const { searchParams } = new URL(request.url)
     const uprn = searchParams.get('uprn')
 
@@ -14,9 +24,24 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'UPRN is required' }, { status: 400 })
     }
 
+    // Get user_id from database
+    const userResult = await query(
+      'SELECT user_id FROM users WHERE email = $1',
+      [session.user.email]
+    )
+
+    if (userResult.rows.length === 0) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      )
+    }
+
+    const userId = userResult.rows[0].user_id
+
     const result = await query(
-      'SELECT * FROM comparables_data WHERE uprn = $1',
-      [uprn]
+      'SELECT * FROM comparables_data WHERE user_id = $1 AND uprn = $2',
+      [userId, uprn]
     )
 
     if (result.rows.length === 0) {
@@ -44,6 +69,15 @@ export async function POST(request: NextRequest) {
     // Ensure database is ready before processing
     await ensureAppReady()
     
+    // Check authentication
+    const session = await getServerSession()
+    if (!session?.user?.email) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+    
     const body = await request.json()
     const { uprn, selected_comparable_ids, valuation_strategy, calculated_valuation } = body
 
@@ -56,10 +90,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid valuation strategy' }, { status: 400 })
     }
 
+    // Get user_id from database
+    const userResult = await query(
+      'SELECT user_id FROM users WHERE email = $1',
+      [session.user.email]
+    )
+
+    if (userResult.rows.length === 0) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      )
+    }
+
+    const userId = userResult.rows[0].user_id
+
     const result = await query(
-      `INSERT INTO comparables_data (uprn, selected_comparable_ids, valuation_strategy, calculated_valuation)
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT (uprn) 
+      `INSERT INTO comparables_data (user_id, uprn, selected_comparable_ids, valuation_strategy, calculated_valuation)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (user_id, uprn) 
        DO UPDATE SET 
          selected_comparable_ids = EXCLUDED.selected_comparable_ids,
          valuation_strategy = EXCLUDED.valuation_strategy,
@@ -67,6 +116,7 @@ export async function POST(request: NextRequest) {
          last_updated = NOW()
        RETURNING *`,
       [
+        userId,
         uprn,
         JSON.stringify(selected_comparable_ids || []),
         valuation_strategy || 'average',

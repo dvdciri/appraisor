@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
 import { query } from '../../../../lib/db/client'
 import { ensureAppReady } from '@/lib/db/startup'
 
@@ -7,6 +8,15 @@ export async function GET(request: NextRequest) {
   try {
     // Ensure database is ready before processing
     await ensureAppReady()
+    
+    // Check authentication
+    const session = await getServerSession()
+    if (!session?.user?.email) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
     
     const { searchParams } = new URL(request.url)
     const uprn = searchParams.get('uprn') || searchParams.get('id') // Backward compatibility
@@ -18,9 +28,24 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Get user_id from database
+    const userResult = await query(
+      'SELECT user_id FROM users WHERE email = $1',
+      [session.user.email]
+    )
+
+    if (userResult.rows.length === 0) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      )
+    }
+
+    const userId = userResult.rows[0].user_id
+
     const result = await query(
-      'SELECT data, last_updated FROM calculator_data WHERE uprn = $1',
-      [uprn]
+      'SELECT data, last_updated FROM calculator_data WHERE user_id = $1 AND uprn = $2',
+      [userId, uprn]
     )
 
     if (result.rows.length === 0) {
@@ -50,6 +75,15 @@ export async function POST(request: NextRequest) {
     // Ensure database is ready before processing
     await ensureAppReady()
     
+    // Check authentication
+    const session = await getServerSession()
+    if (!session?.user?.email) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+    
     const { uprn, analysisId, data } = await request.json()
     const propertyUprn = uprn || analysisId // Backward compatibility
 
@@ -60,18 +94,31 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // No need to check for property existence since calculator_data is now independent
+    // Get user_id from database
+    const userResult = await query(
+      'SELECT user_id FROM users WHERE email = $1',
+      [session.user.email]
+    )
+
+    if (userResult.rows.length === 0) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      )
+    }
+
+    const userId = userResult.rows[0].user_id
 
     // Use upsert (INSERT ... ON CONFLICT UPDATE)
     const result = await query(`
-      INSERT INTO calculator_data (uprn, data, last_updated)
-      VALUES ($1, $2, NOW())
-      ON CONFLICT (uprn) 
+      INSERT INTO calculator_data (user_id, uprn, data, last_updated)
+      VALUES ($1, $2, $3, NOW())
+      ON CONFLICT (user_id, uprn) 
       DO UPDATE SET 
         data = EXCLUDED.data,
         last_updated = NOW()
       RETURNING *
-    `, [propertyUprn, data])
+    `, [userId, propertyUprn, data])
 
     const calculatorData = result.rows[0]
     return NextResponse.json({
@@ -90,6 +137,15 @@ export async function POST(request: NextRequest) {
 // DELETE - delete calculator data
 export async function DELETE(request: NextRequest) {
   try {
+    // Check authentication
+    const session = await getServerSession()
+    if (!session?.user?.email) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+    
     const { searchParams } = new URL(request.url)
     const uprn = searchParams.get('uprn') || searchParams.get('id') // Backward compatibility
 
@@ -100,9 +156,24 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
+    // Get user_id from database
+    const userResult = await query(
+      'SELECT user_id FROM users WHERE email = $1',
+      [session.user.email]
+    )
+
+    if (userResult.rows.length === 0) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      )
+    }
+
+    const userId = userResult.rows[0].user_id
+
     await query(
-      'DELETE FROM calculator_data WHERE uprn = $1',
-      [uprn]
+      'DELETE FROM calculator_data WHERE user_id = $1 AND uprn = $2',
+      [userId, uprn]
     )
 
     return NextResponse.json({ success: true })
