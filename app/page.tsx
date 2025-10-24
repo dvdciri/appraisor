@@ -18,9 +18,9 @@ export default function LandingPage() {
     is_first_100: boolean
   } | null>(null)
   const [loadingCount, setLoadingCount] = useState(true)
-  const [visibleFeatures, setVisibleFeatures] = useState<Set<number>>(new Set())
+  const [visibleFeatures, setVisibleFeatures] = useState<number[]>([])
   const [isPricingVisible, setIsPricingVisible] = useState(false)
-  const featureRefs = useRef<(HTMLDivElement | null)[]>([])
+  const featureRefs = useRef<(HTMLElement | null)[]>([])
   const pricingRef = useRef<HTMLDivElement | null>(null)
 
   // Fetch subscriber count on component mount
@@ -56,7 +56,7 @@ export default function LandingPage() {
           if (entry.isIntersecting) {
             if (entry.target.getAttribute('data-feature-index')) {
               const index = parseInt(entry.target.getAttribute('data-feature-index') || '0')
-              setVisibleFeatures(prev => new Set([...prev, index]))
+              setVisibleFeatures(prev => prev.includes(index) ? prev : [...prev, index])
             } else if (entry.target.getAttribute('data-pricing-section')) {
               setIsPricingVisible(true)
             }
@@ -146,13 +146,13 @@ export default function LandingPage() {
     { 
       icon: '🏠', 
       title: 'Automatic Comparables & Valuations', 
-      description: 'See accurate comparables and AI-backed valuations in seconds. Get professional-grade valuations without the professional fees.',
+      description: 'See accurate comparables and valuations in seconds, with the behind-the-scenes data on how we got there.',
       preview: 'Our AI finds the most relevant comparable properties, adjusts for differences, and provides multiple valuation methods including automated valuation models and market analysis.'
     },
     { 
       icon: '🏚️', 
       title: 'AI Refurbishment Estimator', 
-      description: 'Upload property photos and get AI-generated refurbishment cost estimates. Know exactly what you\'re getting into before you buy.',
+      description: 'Upload property photos or description of works and get AI-generated schedule of works. Know exactly what you\'re getting into before you buy.',
       preview: 'Simply snap photos of each room and our AI will identify everything from outdated kitchens to structural issues, then provide detailed cost breakdowns for materials and labor.'
     }
   ]
@@ -161,7 +161,7 @@ export default function LandingPage() {
     { 
       icon: '💡', 
       title: 'Multi-Exit Calculators with AI Assistant', 
-      description: 'Run scenarios for buy-to-let, flip, or resale with AI-driven guidance. Maximize your returns with data-driven investment decisions.',
+      description: 'Run scenarios for multiple exit strategies including BTL, flip, BRRR, and more with AI-driven guidance.',
       preview: 'Our AI analyzes your property and market conditions to suggest the most profitable exit strategy, complete with ROI projections, cash flow forecasts, and risk assessments.'
     },
     { 
@@ -173,7 +173,7 @@ export default function LandingPage() {
     { 
       icon: '⚠️', 
       title: 'Environmental Risk Assessment', 
-      description: 'Automatically detect flood, contamination, and energy risks before you buy. Avoid costly surprises and protect your investment.',
+      description: 'Automatically detect flood, contamination, and energy risks before you buy.',
       preview: 'Comprehensive risk analysis covering flood zones, contaminated land, energy efficiency ratings, subsidence risk, and planning restrictions that could affect your investment.'
     }
   ]
@@ -405,10 +405,10 @@ export default function LandingPage() {
               {majorFeatures.map((feature, index) => (
                 <article
                   key={index}
-                  ref={(el) => (featureRefs.current[index] = el)}
+                  ref={(el) => { featureRefs.current[index] = el }}
                   data-feature-index={index}
                   className={`bg-black/20 backdrop-blur-xl border border-gray-500/30 rounded-2xl p-8 md:p-12 hover:bg-black/30 transition-all duration-700 group ${
-                    visibleFeatures.has(index) 
+                    visibleFeatures.includes(index) 
                       ? 'opacity-100 translate-y-0' 
                       : 'opacity-0 translate-y-8'
                   }`}
@@ -602,7 +602,7 @@ export default function LandingPage() {
                         <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/>
                       </svg>
                     </div>
-                    <p className="text-white text-lg leading-relaxed">Automatic top-ups when your balance runs low</p>
+                    <p className="text-white text-lg leading-relaxed">Set up automatic top-ups to never run out of credits</p>
                   </div>
                   
                   <div className="bg-black/20 backdrop-blur-xl border border-gray-500/30 rounded-xl p-6 text-left">
@@ -611,7 +611,7 @@ export default function LandingPage() {
                         <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
                       </svg>
                     </div>
-                    <p className="text-white text-lg leading-relaxed">Balance warning reminders to keep you informed</p>
+                    <p className="text-white text-lg leading-relaxed">Add a balance warning reminder to keep you informed when you're running low</p>
                   </div>
                   
                   <div className="bg-black/20 backdrop-blur-xl border border-gray-500/30 rounded-xl p-6 text-left">
@@ -620,7 +620,7 @@ export default function LandingPage() {
                         <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
                       </svg>
                     </div>
-                    <p className="text-white text-lg leading-relaxed">No subscriptions, minimum periods, or hidden fees</p>
+                    <p className="text-white text-lg leading-relaxed">We promise, no subscriptions, minimum periods, or hidden fees, you pay for what you use and can cancel anytime</p>
                   </div>
                   
                 </div>
