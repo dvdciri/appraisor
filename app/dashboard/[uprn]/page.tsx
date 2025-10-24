@@ -1149,7 +1149,7 @@ export default function DashboardV1() {
         {/* Main Content */}
         <main className="relative z-10 h-screen flex flex-col">
           {/* Scrollable Content Container - starts from top to scroll under header */}
-          <div className="flex-1 overflow-y-auto px-6 pt-32 pb-6">
+          <div className="flex-1 overflow-y-auto px-6 pt-32 pb-6 hide-scrollbar">
             <div className="w-full max-w-7xl mx-auto">
               <div className="flex gap-8 w-full">
                 {/* Sidebar Navigation */}

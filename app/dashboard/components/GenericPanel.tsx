@@ -37,7 +37,7 @@ export default function GenericPanel({
             <span className="text-gray-400 hover:text-gray-100 text-xl">✕</span>
           </button>
         </div>
-        <div className="flex-1 p-6 overflow-y-auto min-h-0">
+        <div className="flex-1 p-6 overflow-y-auto min-h-0 hide-scrollbar">
           {children}
         </div>
       </div>
