@@ -1184,7 +1184,7 @@ export default function DashboardV1() {
                         <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                       </svg>
                     </div>
-                    <span className="text-white font-medium text-sm">30 Credits available</span>
+                    <span className="text-white font-medium text-sm">30 credits available</span>
                   </div>
                   
                   {/* User profile with dropdown menu */}
@@ -1219,7 +1219,7 @@ export default function DashboardV1() {
               </div>
             ) : (
               /* Section Content */
-              <div className="space-y-6">
+              <div className="space-y-8">
                 {activeSection === 'property-details' && propertyData ? (
               /* Property Details Content */
               <div className="bg-black/20 backdrop-blur-xl border border-gray-500/30 rounded-2xl p-6 shadow-2xl">
@@ -1228,18 +1228,13 @@ export default function DashboardV1() {
                   <h3 className="text-lg font-semibold text-gray-100">{sections.find(s => s.id === activeSection)?.label}</h3>
                 </div>
                 
-                <div className="space-y-6">
-                  {/* LOCATION Section */}
-                  <div className="bg-black/20 backdrop-blur-xl border border-gray-500/30 rounded-xl p-6 shadow-lg">
-                    <h2 className="text-lg font-medium text-gray-400 mb-6 uppercase tracking-wide">
-                      LOCATION
-                    </h2>
-                    
+                <div className="space-y-8">
+                  {/* Property Overview Section */}
+                  <div className="">
                     {/* Address Section */}
-                    <div className="mb-6">
-                      <h3 className="text-md font-medium text-gray-300 mb-3">Address</h3>
+                    <div className="mb-4">
                       <div className="text-left">
-                        <p className="text-gray-100 text-2xl font-semibold mb-1">
+                        <p className="text-gray-100 text-2xl font-semibold mb-2">
                           {getPropertyValue('address.street_group_format.address_lines')}
                         </p>
                         <p className="text-gray-300 text-lg">
@@ -1248,189 +1243,221 @@ export default function DashboardV1() {
                       </div>
                     </div>
                     
-                    {/* Location Details */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                      <div className="lg:col-span-1">
-                        <h3 className="text-lg font-medium text-gray-200 mb-3">Local Area</h3>
-                        <div className="space-y-2">
-                          {getPropertyValue('localities.ward') !== 'N/A' && (
-                            <p className="text-gray-300">
-                              <span className="text-gray-400">Ward:</span> {getPropertyValue('localities.ward')}
-                            </p>
-                          )}
-                          {getPropertyValue('localities.local_authority') !== 'N/A' && (
-                            <p className="text-gray-300">
-                              <span className="text-gray-400">Local Authority:</span> {getPropertyValue('localities.local_authority')}
-                            </p>
-                          )}
-                          {getPropertyValue('localities.county') !== 'N/A' && (
-                            <p className="text-gray-300">
-                              <span className="text-gray-400">County:</span> {getPropertyValue('localities.county')}
-                            </p>
-                          )}
-                          {getPropertyValue('localities.police_force') !== 'N/A' && (
-                            <p className="text-gray-300">
-                              <span className="text-gray-400">Police Force:</span> {getPropertyValue('localities.police_force')}
-                            </p>
-                          )}
+                    {/* Property Details Tags */}
+                    <div className="flex flex-wrap gap-4">
+                      {getPropertyValue('property_type.value') !== 'N/A' && (
+                        <div className="flex items-center gap-2 bg-gray-500/10 rounded-lg px-4 py-2">
+                          <span className="text-gray-400 text-sm">Type:</span>
+                          <span className="text-gray-100 font-medium">{getPropertyValue('property_type.value')}</span>
+                        </div>
+                      )}
+                      {getPropertyValue('construction_age_band') !== 'N/A' && (
+                        <div className="flex items-center gap-2 bg-gray-500/10 rounded-lg px-4 py-2">
+                          <span className="text-gray-400 text-sm">Age:</span>
+                          <span className="text-gray-100 font-medium">{getPropertyValue('construction_age_band')}</span>
+                        </div>
+                      )}
+                      {getPropertyValue('tenure.tenure_type') !== 'N/A' && (
+                        <div className="flex items-center gap-2 bg-gray-500/10 rounded-lg px-4 py-2">
+                          <span className="text-gray-400 text-sm">Tenure:</span>
+                          <span className="text-gray-100 font-medium">{getPropertyValue('tenure.tenure_type')}</span>
+                        </div>
+                      )}
+                      {getPropertyValue('number_of_bedrooms.value') !== 'N/A' && (
+                        <div className="flex items-center gap-2 bg-gray-500/10 rounded-lg px-4 py-2">
+                          <span className="text-gray-400 text-sm">Beds:</span>
+                          <span className="text-gray-100 font-medium">{getPropertyValue('number_of_bedrooms.value', '0')}</span>
+                        </div>
+                      )}
+                      {getPropertyValue('number_of_bathrooms.value') !== 'N/A' && (
+                        <div className="flex items-center gap-2 bg-gray-500/10 rounded-lg px-4 py-2">
+                          <span className="text-gray-400 text-sm">Baths:</span>
+                          <span className="text-gray-100 font-medium">{getPropertyValue('number_of_bathrooms.value', '0')}</span>
+                        </div>
+                      )}
+                      {getPropertyValue('internal_area_square_metres') !== 'N/A' && getPropertyValue('internal_area_square_metres') !== '0' && (
+                        <div className="flex items-center gap-2 bg-gray-500/10 rounded-lg px-4 py-2">
+                          <span className="text-gray-400 text-sm">Area:</span>
+                          <span className="text-gray-100 font-medium">{formatArea(getPropertyValue('internal_area_square_metres', '0'))}</span>
+                        </div>
+                      )}
+                      {getPropertyValue('council_tax.council_tax_band') !== 'N/A' && (
+                        <div className="flex items-center gap-2 bg-gray-500/10 rounded-lg px-4 py-2">
+                          <span className="text-gray-400 text-sm">Tax:</span>
+                          <span className="text-gray-100 font-medium">{getPropertyValue('council_tax.council_tax_band', 'N/A')}</span>
+                        </div>
+                      )}
+                      {getPropertyValue('energy_performance.current_energy_rating') !== 'N/A' && (
+                        <div className="flex items-center gap-2 bg-gray-500/10 rounded-lg px-4 py-2">
+                          <span className="text-gray-400 text-sm">EPC:</span>
+                          <span className="text-gray-100 font-medium">{getPropertyValue('energy_performance.current_energy_rating', 'N/A')}</span>
+                        </div>
+                      )}
+                      {getPropertyValue('flood_risk.risk_label') !== 'N/A' && (
+                        <div className="flex items-center gap-2 bg-gray-500/10 rounded-lg px-4 py-2">
+                          <span className="text-gray-400 text-sm">Flood:</span>
+                          <span className="text-gray-100 font-medium">{getPropertyValue('flood_risk.risk_label', 'N/A')}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Maps & Local Area Section */}
+                  <div className="mb-12">
+                    {/* Location Title */}
+                    <h2 className="text-lg font-medium text-gray-300 mb-6">Location</h2>
+                    
+                    {/* Maps Section */}
+                    <div className="mb-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Google Map */}
+                        <div className="relative w-full h-64 rounded-lg overflow-hidden border border-gray-500/30">
+                          <iframe
+                            src={`https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&q=${encodeURIComponent(getPropertyValue('address.street_group_format.address_lines') + ', ' + getPropertyValue('address.street_group_format.postcode'))}&zoom=15&maptype=roadmap`}
+                            width="100%"
+                            height="100%"
+                            style={{ border: 0 }}
+                            allowFullScreen
+                            loading="lazy"
+                            referrerPolicy="no-referrer-when-downgrade"
+                            title="Property Location Map"
+                          />
+                        </div>
+                        
+                        {/* Interactive Street View */}
+                        <div className="relative w-full h-64 rounded-lg overflow-hidden border border-gray-500/30">
+                          <iframe
+                            src={getStreetViewEmbedUrl(
+                              parseFloat(getPropertyValue('location.coordinates.latitude', '0')), 
+                              parseFloat(getPropertyValue('location.coordinates.longitude', '0'))
+                            )}
+                            width="100%"
+                            height="100%"
+                            style={{ border: 0 }}
+                            allowFullScreen
+                            loading="lazy"
+                            referrerPolicy="no-referrer-when-downgrade"
+                            title="Interactive Street View"
+                          />
                         </div>
                       </div>
-                      <div className="lg:col-span-2">
-                        <h3 className="text-lg font-medium text-gray-200 mb-3">Maps</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {/* Google Map */}
-                          <div className="relative w-full h-48 rounded-lg overflow-hidden border border-gray-500/30">
-                            <iframe
-                              src={`https://www.google.com/maps/embed/v1/view?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&center=${getPropertyValue('location.coordinates.latitude')},${getPropertyValue('location.coordinates.longitude')}&zoom=15&maptype=roadmap`}
-                              width="100%"
-                              height="100%"
-                              style={{ border: 0 }}
-                              allowFullScreen
-                              loading="lazy"
-                              referrerPolicy="no-referrer-when-downgrade"
-                              title="Property Location Map"
-                            />
-                          </div>
-                          
-                          {/* Interactive Street View */}
-                          <div className="relative w-full h-48 rounded-lg overflow-hidden border border-gray-500/30">
-                            <iframe
-                              src={getStreetViewEmbedUrl(
-                                parseFloat(getPropertyValue('location.coordinates.latitude', '0')), 
-                                parseFloat(getPropertyValue('location.coordinates.longitude', '0'))
-                              )}
-                              width="100%"
-                              height="100%"
-                              style={{ border: 0 }}
-                              allowFullScreen
-                              loading="lazy"
-                              referrerPolicy="no-referrer-when-downgrade"
-                              title="Interactive Street View"
-                            />
+                    </div>
+                    
+                    {/* Local Area Details */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                      {getPropertyValue('localities.ward') !== 'N/A' && (
+                        <div className="bg-gray-800/20 rounded-lg p-3 border border-gray-600/20">
+                          <div className="text-center">
+                            <div className="text-sm font-semibold text-gray-100">{getPropertyValue('localities.ward')}</div>
+                            <div className="text-xs text-gray-400">Ward</div>
                           </div>
                         </div>
-                      </div>
+                      )}
+                      {getPropertyValue('localities.local_authority') !== 'N/A' && (
+                        <div className="bg-gray-800/20 rounded-lg p-3 border border-gray-600/20">
+                          <div className="text-center">
+                            <div className="text-sm font-semibold text-gray-100">{getPropertyValue('localities.local_authority')}</div>
+                            <div className="text-xs text-gray-400">Local Authority</div>
+                          </div>
+                        </div>
+                      )}
+                      {getPropertyValue('localities.county') !== 'N/A' && (
+                        <div className="bg-gray-800/20 rounded-lg p-3 border border-gray-600/20">
+                          <div className="text-center">
+                            <div className="text-sm font-semibold text-gray-100">{getPropertyValue('localities.county')}</div>
+                            <div className="text-xs text-gray-400">County</div>
+                          </div>
+                        </div>
+                      )}
+                      {getPropertyValue('localities.police_force') !== 'N/A' && (
+                        <div className="bg-gray-800/20 rounded-lg p-3 border border-gray-600/20">
+                          <div className="text-center">
+                            <div className="text-sm font-semibold text-gray-100">{getPropertyValue('localities.police_force')}</div>
+                            <div className="text-xs text-gray-400">Police Force</div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
-                  {/* Details Section */}
-                  <div className="bg-black/20 backdrop-blur-xl border border-gray-500/30 rounded-xl p-6 shadow-lg">
-                    <h2 className="text-lg font-medium text-gray-400 mb-6 uppercase tracking-wide">
-                      DETAILS
-                    </h2>
-                    
-                    {/* Property Details in Single Line */}
-                    <div className="mb-6">
-                      <div className="flex flex-wrap gap-4">
-                        {getPropertyValue('property_type.value') !== 'N/A' && (
-                          <div className="flex items-center gap-2 bg-gray-500/10 rounded-lg px-4 py-2">
-                            <span className="text-gray-400 text-sm">Type:</span>
-                            <span className="text-gray-100 font-medium">{getPropertyValue('property_type.value')}</span>
-                          </div>
-                        )}
-                        {getPropertyValue('construction_age_band') !== 'N/A' && (
-                          <div className="flex items-center gap-2 bg-gray-500/10 rounded-lg px-4 py-2">
-                            <span className="text-gray-400 text-sm">Age:</span>
-                            <span className="text-gray-100 font-medium">{getPropertyValue('construction_age_band')}</span>
-                          </div>
-                        )}
-                        {getPropertyValue('tenure.tenure_type') !== 'N/A' && (
-                          <div className="flex items-center gap-2 bg-gray-500/10 rounded-lg px-4 py-2">
-                            <span className="text-gray-400 text-sm">Tenure:</span>
-                            <span className="text-gray-100 font-medium">{getPropertyValue('tenure.tenure_type')}</span>
-                          </div>
-                        )}
-                        {getPropertyValue('number_of_bedrooms.value') !== 'N/A' && (
-                          <div className="flex items-center gap-2 bg-gray-500/10 rounded-lg px-4 py-2">
-                            <span className="text-gray-400 text-sm">Beds:</span>
-                            <span className="text-gray-100 font-medium">{getPropertyValue('number_of_bedrooms.value', '0')}</span>
-                          </div>
-                        )}
-                        {getPropertyValue('number_of_bathrooms.value') !== 'N/A' && (
-                          <div className="flex items-center gap-2 bg-gray-500/10 rounded-lg px-4 py-2">
-                            <span className="text-gray-400 text-sm">Baths:</span>
-                            <span className="text-gray-100 font-medium">{getPropertyValue('number_of_bathrooms.value', '0')}</span>
-                          </div>
-                        )}
-                        {getPropertyValue('internal_area_square_metres') !== 'N/A' && getPropertyValue('internal_area_square_metres') !== '0' && (
-                          <div className="flex items-center gap-2 bg-gray-500/10 rounded-lg px-4 py-2">
-                            <span className="text-gray-400 text-sm">Area:</span>
-                            <span className="text-gray-100 font-medium">{formatArea(getPropertyValue('internal_area_square_metres', '0'))}</span>
-                          </div>
-                        )}
-                        {getPropertyValue('council_tax.council_tax_band') !== 'N/A' && (
-                          <div className="flex items-center gap-2 bg-gray-500/10 rounded-lg px-4 py-2">
-                            <span className="text-gray-400 text-sm">Tax:</span>
-                            <span className="text-gray-100 font-medium">{getPropertyValue('council_tax.council_tax_band', 'N/A')}</span>
-                          </div>
-                        )}
-                        {getPropertyValue('energy_performance.current_energy_rating') !== 'N/A' && (
-                          <div className="flex items-center gap-2 bg-gray-500/10 rounded-lg px-4 py-2">
-                            <span className="text-gray-400 text-sm">EPC:</span>
-                            <span className="text-gray-100 font-medium">{getPropertyValue('energy_performance.current_energy_rating', 'N/A')}</span>
-                          </div>
-                        )}
-                        {getPropertyValue('flood_risk.risk_label') !== 'N/A' && (
-                          <div className="flex items-center gap-2 bg-gray-500/10 rounded-lg px-4 py-2">
-                            <span className="text-gray-400 text-sm">Flood:</span>
-                            <span className="text-gray-100 font-medium">{getPropertyValue('flood_risk.risk_label', 'N/A')}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                
 
-                    {/* Property Details Subsections */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {subsections[activeSection]
-                        .sort((a, b) => {
-                          const aHasData = hasSubsectionData(a.id)
-                          const bHasData = hasSubsectionData(b.id)
-                          // Sort so that subsections with data come first
-                          if (aHasData && !bHasData) return -1
-                          if (!aHasData && bHasData) return 1
-                          return 0
-                        })
-                        .map((subsection) => {
-                          const hasData = hasSubsectionData(subsection.id)
-                          const isSelected = activeSubsection === subsection.id
-                          return (
-                            <button
-                              key={subsection.id}
-                              onClick={() => handleSubsectionClick(subsection.id)}
-                              disabled={!hasData}
-                              title={!hasData ? 'Not available' : undefined}
-                              className={`backdrop-blur-xl border rounded-xl p-4 text-left transition-all duration-200 group shadow-lg ${
+                  {/* Ownership & Construction Details - Side by Side */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
+                    {/* Ownership & Occupancy Section */}
+                    {hasSubsectionData('ownership') && (
+                      <div>
+                        <h2 className="text-lg font-medium text-gray-300 mb-4">Ownership & Occupancy</h2>
+                        <OwnershipDataDisplay propertyData={propertyData} getPropertyValue={getPropertyValue} />
+                      </div>
+                    )}
+
+                    {/* Construction Details Section */}
+                    {hasSubsectionData('construction') && (
+                      <div>
+                        <h2 className="text-lg font-medium text-gray-300 mb-4">Construction Details</h2>
+                        <ConstructionDataDisplay propertyData={propertyData} getPropertyValue={getPropertyValue} />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* More Details Section */}
+                  <div className="mt-16 mb-12">
+                
+                    
+                    {/* Property Details Subsections - Only remaining three */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {subsections[activeSection]
+                      .filter(subsection => ['plot', 'utilities', 'energy'].includes(subsection.id))
+                      .sort((a, b) => {
+                        const aHasData = hasSubsectionData(a.id)
+                        const bHasData = hasSubsectionData(b.id)
+                        // Sort so that subsections with data come first
+                        if (aHasData && !bHasData) return -1
+                        if (!aHasData && bHasData) return 1
+                        return 0
+                      })
+                      .map((subsection) => {
+                        const hasData = hasSubsectionData(subsection.id)
+                        const isSelected = activeSubsection === subsection.id
+                        return (
+                          <button
+                            key={subsection.id}
+                            onClick={() => handleSubsectionClick(subsection.id)}
+                            disabled={!hasData}
+                            title={!hasData ? 'Not available' : undefined}
+                            className={`backdrop-blur-xl border rounded-xl p-4 text-left transition-all duration-200 group shadow-lg ${
+                              isSelected
+                                ? 'bg-purple-500/20 border-purple-400/50 shadow-purple-500/20'
+                                : hasData 
+                                  ? 'bg-black/20 border-gray-500/30 hover:bg-gray-500/20 cursor-pointer' 
+                                  : 'bg-black/20 border-gray-500/30 opacity-50 cursor-not-allowed'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3 mb-2">
+                              <span className="text-xl">{subsection.icon}</span>
+                              <h3 className={`font-semibold transition-colors ${
                                 isSelected
-                                  ? 'bg-purple-500/20 border-purple-400/50 shadow-purple-500/20'
+                                  ? 'text-purple-200'
                                   : hasData 
-                                    ? 'bg-black/20 border-gray-500/30 hover:bg-gray-500/20 cursor-pointer' 
-                                    : 'bg-black/20 border-gray-500/30 opacity-50 cursor-not-allowed'
-                              }`}
-                            >
-                              <div className="flex items-center gap-3 mb-2">
-                                <span className="text-xl">{subsection.icon}</span>
-                                <h3 className={`font-semibold transition-colors ${
-                                  isSelected
-                                    ? 'text-purple-200'
-                                    : hasData 
-                                      ? 'text-gray-100 group-hover:text-gray-50' 
-                                      : 'text-gray-500'
-                                }`}>
-                                  {subsection.label}
-                                </h3>
-                              </div>
-                              <p className={`text-sm ${
-                                isSelected
-                                  ? 'text-purple-300'
-                                  : hasData 
-                                    ? 'text-gray-400' 
-                                    : 'text-gray-600'
+                                    ? 'text-gray-100 group-hover:text-gray-50' 
+                                    : 'text-gray-500'
                               }`}>
-                                {subsection.description}
-                              </p>
-                            </button>
-                          )
-                        })}
+                                {subsection.label}
+                              </h3>
+                            </div>
+                            <p className={`text-sm ${
+                              isSelected
+                                ? 'text-purple-300'
+                                : hasData 
+                                  ? 'text-gray-400' 
+                                  : 'text-gray-600'
+                            }`}>
+                              {subsection.description}
+                            </p>
+                          </button>
+                        )
+                      })}
                     </div>
                   </div>
                 </div>
