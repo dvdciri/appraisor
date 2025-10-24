@@ -40,7 +40,7 @@ export default function PostcodeSearch({ onPostcodeSubmit, loading = false, erro
   return (
     <div className="space-y-4">
       <div>
-        <label htmlFor="postcode" className="block text-sm font-medium text-fg-primary mb-2">
+        <label htmlFor="postcode" className="block text-sm font-medium text-white mb-2">
           UK Postcode
         </label>
         <input
@@ -49,17 +49,14 @@ export default function PostcodeSearch({ onPostcodeSubmit, loading = false, erro
           value={postcode}
           onChange={handleInputChange}
           placeholder="e.g., SW1A 1AA"
-          className="w-full px-4 py-3 bg-bg-subtle border border-border rounded-lg text-fg-primary placeholder-fg-muted focus:outline-none focus:shadow-focus"
+          className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
           disabled={loading}
           maxLength={8}
         />
-        <p className="mt-1 text-xs text-fg-muted">
-          Enter a UK postcode to find available addresses
-        </p>
       </div>
 
       {error && (
-        <div className="text-sm text-danger bg-danger/10 border border-danger/20 rounded-lg p-3">
+        <div className="text-sm text-red-300 bg-red-500/20 border border-red-400/30 rounded-lg p-3">
           {error}
         </div>
       )}
@@ -68,11 +65,11 @@ export default function PostcodeSearch({ onPostcodeSubmit, loading = false, erro
         type="submit"
         onClick={handleSubmit}
         disabled={loading || !postcode.trim()}
-        className="w-full bg-accent text-accent-fg hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed font-medium py-3 px-6 rounded-lg transition-opacity duration-200 focus:outline-none focus:shadow-focus"
+        className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {loading ? (
           <div className="flex items-center justify-center gap-2">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-accent-fg"></div>
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
             Finding Addresses...
           </div>
         ) : (
