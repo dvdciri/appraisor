@@ -414,7 +414,7 @@ export default function LandingPage() {
                   }`}
                   role="listitem"
                 >
-                  <div className="flex flex-col lg:flex-row items-start gap-8">
+                  <div className="flex flex-col lg:flex-row items-start gap-4 lg:gap-8">
                     {/* Feature Info */}
                     <div className="flex-1">
                       <div className="flex items-start gap-4 mb-6">
@@ -510,37 +510,65 @@ export default function LandingPage() {
                       )}
                       
                       {index === 2 && (
-                        <div className="w-full h-full flex flex-col items-center justify-center p-2">
-                          {/* Section 1: Input Options */}
-                          <div className="w-full mb-1">
-                            <div className="flex items-center gap-2">
-                              <div className="bg-white/10 rounded p-1.5 text-center flex-1">
-                                <div className="text-sm text-gray-300 font-medium">📸 Pictures</div>
+                        <div className="w-full h-full flex items-center justify-center p-3">
+                          <div className="w-full max-w-sm">
+                            {/* Header with AI Icon */}
+                            <div className="flex items-center gap-2 mb-3">
+                              <div className="w-6 h-6 bg-gradient-to-br from-purple-500/30 to-pink-500/30 rounded-full flex items-center justify-center">
+                                <div className="text-sm">🤖</div>
                               </div>
-                              <div className="text-sm text-purple-300 font-medium px-1">OR</div>
-                              <div className="bg-white/10 rounded p-1.5 text-center flex-1">
-                                <div className="text-sm text-gray-300 font-medium">📝 Description</div>
+                              <div className="text-xs text-purple-300 font-medium">AI Refurbishment Schedule</div>
+                            </div>
+                            
+                            {/* Schedule of Work List */}
+                            <div className="space-y-2">
+                              <div className="bg-white/10 rounded p-2 flex justify-between items-center">
+                                <div className="flex items-center gap-2">
+                                  <div className="text-xs">🔧</div>
+                                  <div className="text-xs text-gray-300">Replace boiler</div>
+                                </div>
+                                <div className="text-xs text-white font-medium">£2,500</div>
+                              </div>
+                              
+                              <div className="bg-white/10 rounded p-2 flex justify-between items-center">
+                                <div className="flex items-center gap-2">
+                                  <div className="text-xs">🪟</div>
+                                  <div className="text-xs text-gray-300">New windows</div>
+                                </div>
+                                <div className="text-xs text-white font-medium">£4,200</div>
+                              </div>
+                              
+                              <div className="bg-white/10 rounded p-2 flex justify-between items-center">
+                                <div className="flex items-center gap-2">
+                                  <div className="text-xs">🎨</div>
+                                  <div className="text-xs text-gray-300">Paint & decorate</div>
+                                </div>
+                                <div className="text-xs text-white font-medium">£1,800</div>
+                              </div>
+                              
+                              <div className="bg-white/10 rounded p-2 flex justify-between items-center">
+                                <div className="flex items-center gap-2">
+                                  <div className="text-xs">⚡</div>
+                                  <div className="text-xs text-gray-300">Rewire electrics</div>
+                                </div>
+                                <div className="text-xs text-white font-medium">£3,100</div>
+                              </div>
+                              
+                              <div className="bg-white/10 rounded p-2 flex justify-between items-center">
+                                <div className="flex items-center gap-2">
+                                  <div className="text-xs">🚿</div>
+                                  <div className="text-xs text-gray-300">Bathroom refit</div>
+                                </div>
+                                <div className="text-xs text-white font-medium">£5,500</div>
                               </div>
                             </div>
-                          </div>
-                          
-                          {/* Arrow */}
-                          <div className="text-purple-300 text-xs my-2">↓</div>
-                          
-                          {/* Section 2: AI Analysis */}
-                          <div className="w-full mb-1">
-                            <div className="bg-white/10 rounded p-1.5 text-center">
-                              <div className="text-sm text-gray-300 font-medium">🤖 AI Agent Analysis</div>
-                            </div>
-                          </div>
-                          
-                          {/* Arrow */}
-                          <div className="text-purple-300 text-sm my-2">↓</div>
-                          
-                          {/* Section 3: Schedule of Work */}
-                          <div className="w-full">
-                            <div className="bg-white/10 rounded p-1.5 text-center">
-                              <div className="text-sm text-gray-300 font-medium">📋 Schedule of Work</div>
+                            
+                            {/* Total */}
+                            <div className="mt-3 pt-2 border-t border-gray-500/30">
+                              <div className="flex justify-between items-center">
+                                <div className="text-xs text-purple-300 font-medium">Total Estimate</div>
+                                <div className="text-sm text-white font-bold">£17,100</div>
+                              </div>
                             </div>
                           </div>
                         </div>
