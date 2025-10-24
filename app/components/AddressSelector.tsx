@@ -99,15 +99,15 @@ export default function AddressSelector({
                 key={address.id}
                 className={`p-3 border rounded-lg cursor-pointer transition-all duration-200 ${
                   selectedAddressId === address.id
-                    ? 'border-purple-400 bg-purple-500/10'
-                    : 'border-gray-600 hover:border-purple-400/50 hover:bg-white/5'
+                    ? 'border-purple-400/30 bg-purple-500/20'
+                    : 'border-gray-600 hover:border-purple-400/30 hover:bg-white/5'
                 }`}
                 onClick={() => handleAddressClick(address.id)}
               >
                 <div className="flex items-center gap-3">
                   <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
                     selectedAddressId === address.id
-                      ? 'border-purple-400 bg-purple-400'
+                      ? 'border-purple-400/30 bg-purple-500'
                       : 'border-gray-500'
                   }`}>
                     {selectedAddressId === address.id && (
@@ -135,7 +135,7 @@ export default function AddressSelector({
           type="submit"
           onClick={handleSubmit}
           disabled={loading || !selectedAddressId}
-          className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-500 hover:to-pink-500 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? (
             <div className="flex items-center justify-center gap-2">

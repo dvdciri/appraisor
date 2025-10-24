@@ -362,47 +362,96 @@ export default function SearchPage() {
     <div className="min-h-screen relative overflow-hidden">
       {/* Google Maps Static Background */}
       <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat blur-sm"
         style={{
           backgroundImage: `url(https://maps.googleapis.com/maps/api/staticmap?center=${mapCenter}&zoom=11&size=3840x2160&maptype=roadmap&scale=2&style=feature:all|element:geometry|color:0x2d1b69&style=feature:water|element:geometry|color:0x1a0b3d&style=feature:road|element:geometry.fill|color:0x4c1d95&style=feature:all|element:labels.text.fill|color:0xffffff&style=feature:all|element:labels.text.stroke|color:0x000000&style=feature:landscape|element:geometry|color:0x1a0b3d&style=feature:poi|element:geometry|color:0x2d1b69&style=feature:transit|element:geometry|color:0x1a0b3d&style=feature:administrative|element:geometry|color:0x4c1d95&style=feature:administrative.country|element:labels.text.fill|color:0xffffff&style=feature:administrative.country|element:labels.text.stroke|color:0x000000&style=feature:administrative.land_parcel|element:labels.text.fill|color:0xffffff&style=feature:administrative.land_parcel|element:labels.text.stroke|color:0x000000&style=feature:landscape.natural|element:geometry|color:0x1a0b3d&style=feature:poi.business|element:geometry|color:0x2d1b69&style=feature:poi.park|element:geometry|color:0x2d1b69&style=feature:poi.park|element:labels.text.fill|color:0xffffff&style=feature:poi.park|element:labels.text.stroke|color:0x000000&style=feature:road.arterial|element:geometry|color:0x4c1d95&style=feature:road.highway|element:geometry|color:0x4c1d95&style=feature:road.highway.controlled_access|element:geometry|color:0x4c1d95&style=feature:road.local|element:labels.text.fill|color:0xffffff&style=feature:road.local|element:labels.text.stroke|color:0x000000&style=feature:transit.line|element:geometry|color:0x1a0b3d&style=feature:transit.station|element:geometry|color:0x2d1b69&style=feature:water|element:labels.text.fill|color:0xffffff&style=feature:water|element:labels.text.stroke|color:0x000000&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY})`,
           imageRendering: 'crisp-edges'
         }}
       />
       
+      {/* Nebula Core (more pronounced) */}
+      <div className="absolute inset-0 bg-gradient-radial from-purple-700/60 via-purple-900/30 to-transparent" />
+      
+      {/* Swirling Nebula Effect (boosted) */}
+      <div 
+        className="absolute inset-0 opacity-80"
+        style={{
+          background: `
+            radial-gradient(ellipse 90% 55% at 22% 32%, rgba(139, 92, 246, 0.45) 0%, transparent 55%),
+            radial-gradient(ellipse 70% 45% at 78% 68%, rgba(59, 130, 246, 0.35) 0%, transparent 55%),
+            radial-gradient(ellipse 75% 65% at 52% 18%, rgba(168, 85, 247, 0.3) 0%, transparent 55%),
+            radial-gradient(ellipse 55% 85% at 12% 78%, rgba(236, 72, 153, 0.22) 0%, transparent 55%)
+          `
+        }}
+      />
+      
+      {/* Animated Cosmic Dust (slightly brighter) */}
+      <div 
+        className="absolute inset-0 opacity-40 animate-pulse"
+        style={{
+          background: `
+            radial-gradient(2px 2px at 20px 30px, rgba(255, 255, 255, 0.1), transparent),
+            radial-gradient(2px 2px at 40px 70px, rgba(255, 255, 255, 0.05), transparent),
+            radial-gradient(1px 1px at 90px 40px, rgba(255, 255, 255, 0.1), transparent),
+            radial-gradient(1px 1px at 130px 80px, rgba(255, 255, 255, 0.05), transparent),
+            radial-gradient(2px 2px at 160px 30px, rgba(255, 255, 255, 0.1), transparent)
+          `,
+          backgroundRepeat: 'repeat',
+          backgroundSize: '200px 100px'
+        }}
+      />
+      
+      {/* Dark Nebula Clouds */}
+      <div 
+        className="absolute inset-0 opacity-40"
+        style={{
+          background: `
+            radial-gradient(ellipse 100% 60% at 0% 0%, rgba(0, 0, 0, 0.8) 0%, transparent 70%),
+            radial-gradient(ellipse 80% 100% at 100% 100%, rgba(0, 0, 0, 0.6) 0%, transparent 60%),
+            radial-gradient(ellipse 60% 80% at 50% 100%, rgba(0, 0, 0, 0.4) 0%, transparent 50%)
+          `
+        }}
+      />
+      
+      {/* Cosmic Glow Effects (increased radius/intensity slightly) */}
+      <div className="absolute top-1/4 left-1/4 w-[28rem] h-[28rem] bg-gradient-radial from-purple-500/30 via-purple-600/15 to-transparent animate-pulse" />
+      <div className="absolute top-3/4 right-1/4 w-[24rem] h-[24rem] bg-gradient-radial from-blue-500/22 via-blue-600/10 to-transparent animate-pulse" style={{ animationDelay: '1s' }} />
+      <div className="absolute bottom-1/4 left-1/3 w-[22rem] h-[22rem] bg-gradient-radial from-pink-500/18 via-pink-600/8 to-transparent animate-pulse" style={{ animationDelay: '2s' }} />
+      
       {/* Simple Dark Overlay */}
       <div className="absolute inset-0 bg-black/60" />
       
-      {/* Floating Top Menu Bar */}
+      {/* Floating Top Menu Bar - Matches content width */}
       <header className="fixed top-0 left-0 right-0 z-[999] p-6">
-        <div className="flex items-center justify-between rounded-2xl px-6 py-4 shadow-2xl backdrop-blur-md" style={{ backgroundColor: 'rgba(30, 15, 45, 0.6)' }}>
-          {/* Left side - Appraisor branding */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl shadow-lg overflow-hidden">
-              <Image
-                src="/logo.png"
-                alt="Appraisor Logo"
-                width={40}
-                height={40}
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <span className="text-xl font-bold text-white">Appraisor</span>
-          </div>
-          
-          {/* Right side - Credits indicator and Profile avatar */}
-          <div className="flex items-center gap-6">
-            {/* Credits indicator */}
-            <div className="flex items-center gap-2">
-              <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                </svg>
+        <div className="w-full max-w-7xl mx-auto">
+          <div className="flex items-center justify-between rounded-2xl px-6 py-4 shadow-2xl backdrop-blur-xl border border-gray-500/30 bg-black/20">
+            {/* Left side - Logo */}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl shadow-lg overflow-hidden">
+                <Image
+                  src="/logo.png"
+                  alt="Appraisor Logo"
+                  width={40}
+                  height={40}
+                  className="w-full h-full object-cover"
+                />
               </div>
-              <span className="text-white font-medium text-sm">30 Credits available</span>
+              <span className="text-xl font-bold text-white">Appraisor</span>
             </div>
             
-            {/* User profile with dropdown menu */}
-            <WorkingUserMenu user={session.user || { name: 'User', email: 'user@example.com' }} />
+            {/* Right side - Credits and User menu */}
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                  </svg>
+                </div>
+                <span className="text-white font-medium text-sm">30 Credits available</span>
+              </div>
+              
+              <WorkingUserMenu user={session.user || { name: 'User', email: 'user@example.com' }} />
+            </div>
           </div>
         </div>
       </header>
@@ -437,12 +486,7 @@ export default function SearchPage() {
                   /* Fixed positioned search box for address step */
                   <div className="fixed top-32 left-6 right-6 z-40">
                     <div className="w-full max-w-2xl mx-auto">
-                      <div className="relative rounded-2xl p-8 shadow-2xl animate-enter-subtle flex flex-col overflow-hidden h-[calc(100vh-10rem)] border border-gray-500/50 backdrop-blur-md">
-                        {/* Simple background for search box */}
-                        <div className="absolute inset-0 rounded-2xl backdrop-blur-md" style={{ backgroundColor: 'rgba(30, 15, 45, 0.6)' }} />
-                        
-                        {/* Content with proper z-index */}
-                        <div className="relative z-10 flex flex-col h-full">
+                      <div className="bg-black/20 backdrop-blur-xl border border-gray-500/30 rounded-2xl p-8 shadow-2xl animate-enter-subtle flex flex-col overflow-hidden h-[calc(100vh-10rem)]">
                         <div className="text-center mb-6 flex-shrink-0">
                           <h1 className="text-2xl font-bold text-white mb-2">Property Insights</h1>
                           <p className="text-gray-300 text-sm">
@@ -450,9 +494,8 @@ export default function SearchPage() {
                           </p>
                         </div>
                           
-                          <div className="flex-1 flex flex-col min-h-0">
-                            {renderCurrentStep()}
-                          </div>
+                        <div className="flex-1 flex flex-col min-h-0">
+                          {renderCurrentStep()}
                         </div>
                       </div>
                     </div>
@@ -460,30 +503,24 @@ export default function SearchPage() {
                 ) : (
                   /* Normal search box for other steps */
                   <div className="mb-6">
-                    <div className={`relative rounded-2xl p-8 shadow-2xl animate-enter-subtle flex flex-col overflow-hidden border border-gray-500/50 backdrop-blur-md ${
+                    <div className={`bg-black/20 backdrop-blur-xl border border-gray-500/30 rounded-2xl p-8 shadow-2xl animate-enter-subtle flex flex-col overflow-hidden ${
                       currentStep === 'postcode' ? 'h-auto' : 
                       currentStep === 'analyzing' ? 'h-auto' : 'h-full min-h-[400px]'
                     }`}>
-                      {/* Simple background for search box */}
-                      <div className="absolute inset-0 rounded-2xl backdrop-blur-md" style={{ backgroundColor: 'rgba(30, 15, 45, 0.6)' }} />
+                      <div className="text-center mb-6 flex-shrink-0">
+                        <h1 className="text-2xl font-bold text-white mb-2">
+                          {currentStep === 'analyzing' ? 'Analyzing Property Data' : 'Search for a property'}
+                        </h1>
+                        <p className="text-gray-300 text-sm">
+                          {currentStep === 'analyzing' 
+                            ? 'Extracting market insights, comparables, and valuation metrics...'
+                            : 'Discover comprehensive data and analysis for any property'
+                          }
+                        </p>
+                      </div>
                       
-                      {/* Content with proper z-index */}
-                      <div className="relative z-10 flex flex-col h-full">
-                        <div className="text-center mb-6 flex-shrink-0">
-                          <h1 className="text-2xl font-bold text-white mb-2">
-                            {currentStep === 'analyzing' ? 'Analyzing Property Data' : 'Search for a property'}
-                          </h1>
-                          <p className="text-gray-300 text-sm">
-                            {currentStep === 'analyzing' 
-                              ? 'Extracting market insights, comparables, and valuation metrics...'
-                              : 'Discover comprehensive data and analysis for any property'
-                            }
-                          </p>
-                        </div>
-                        
-                        <div className={currentStep === 'postcode' ? 'flex flex-col' : 'flex-1 flex flex-col min-h-0'}>
-                          {renderCurrentStep()}
-                        </div>
+                      <div className={currentStep === 'postcode' ? 'flex flex-col' : 'flex-1 flex flex-col min-h-0'}>
+                        {renderCurrentStep()}
                       </div>
                     </div>
                   </div>
@@ -497,7 +534,9 @@ export default function SearchPage() {
             ) : (
               /* All Searches View */
               <div className="animate-enter-subtle">
-                <AllSearches onBack={handleBackToSearch} />
+                <div className="bg-black/20 backdrop-blur-xl border border-gray-500/30 rounded-2xl shadow-2xl overflow-hidden">
+                  <AllSearches onBack={handleBackToSearch} />
+                </div>
               </div>
             )}
           </div>

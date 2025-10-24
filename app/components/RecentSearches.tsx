@@ -84,7 +84,7 @@ export default function RecentSearches({ onShowAll }: RecentSearchesProps) {
           {searches.length > 3 && onShowAll && (
             <button
               onClick={onShowAll}
-              className="text-purple-400 hover:text-purple-300 text-sm font-medium transition-colors"
+              className="text-purple-500 hover:text-purple-400 text-sm font-medium transition-colors"
             >
               See All ({searches.length})
             </button>
@@ -95,7 +95,7 @@ export default function RecentSearches({ onShowAll }: RecentSearchesProps) {
             <div
               key={search.uprn}
               onClick={() => handleSearchClick(search.uprn)}
-              className="flex items-center justify-between p-2 rounded-lg bg-gray-800/30 hover:bg-gray-700/30 cursor-pointer transition-colors"
+              className="flex items-center justify-between p-2 rounded-lg bg-gray-800/30 hover:bg-purple-500/10 hover:border hover:border-purple-400/30 cursor-pointer transition-colors"
             >
               <div className="flex-1 min-w-0">
                 <p className="text-white text-sm font-medium truncate">

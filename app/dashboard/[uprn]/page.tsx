@@ -1040,10 +1040,28 @@ export default function DashboardV1() {
     return null
   }
 
+  // Get property coordinates for map background
+  const getMapCenter = () => {
+    if (propertyData) {
+      const lat = getPropertyValue('location.coordinates.latitude')
+      const lng = getPropertyValue('location.coordinates.longitude')
+      if (lat && lng) {
+        return `${lat},${lng}`
+      }
+    }
+    return '53.4808,-2.2426' // Default to Manchester
+  }
+
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Deep Space Base */}
-      <div className="absolute inset-0 bg-gradient-to-br from-black via-gray-900 to-purple-900" />
+      {/* Google Maps Static Background */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat blur-sm"
+        style={{
+          backgroundImage: `url(https://maps.googleapis.com/maps/api/staticmap?center=${getMapCenter()}&zoom=12&size=3840x2160&maptype=roadmap&scale=2&style=feature:all|element:geometry|color:0x2d1b69&style=feature:water|element:geometry|color:0x1a0b3d&style=feature:road|element:geometry.fill|color:0x4c1d95&style=feature:all|element:labels.text.fill|color:0xffffff&style=feature:all|element:labels.text.stroke|color:0x000000&style=feature:landscape|element:geometry|color:0x1a0b3d&style=feature:poi|element:geometry|color:0x2d1b69&style=feature:transit|element:geometry|color:0x1a0b3d&style=feature:administrative|element:geometry|color:0x4c1d95&style=feature:administrative.country|element:labels.text.fill|color:0xffffff&style=feature:administrative.country|element:labels.text.stroke|color:0x000000&style=feature:administrative.land_parcel|element:labels.text.fill|color:0xffffff&style=feature:administrative.land_parcel|element:labels.text.stroke|color:0x000000&style=feature:landscape.natural|element:geometry|color:0x1a0b3d&style=feature:poi.business|element:geometry|color:0x2d1b69&style=feature:poi.park|element:geometry|color:0x2d1b69&style=feature:poi.park|element:labels.text.fill|color:0xffffff&style=feature:poi.park|element:labels.text.stroke|color:0x000000&style=feature:road.arterial|element:geometry|color:0x4c1d95&style=feature:road.highway|element:geometry|color:0x4c1d95&style=feature:road.highway.controlled_access|element:geometry|color:0x4c1d95&style=feature:road.local|element:labels.text.fill|color:0xffffff&style=feature:road.local|element:labels.text.stroke|color:0x000000&style=feature:transit.line|element:geometry|color:0x1a0b3d&style=feature:transit.station|element:geometry|color:0x2d1b69&style=feature:water|element:labels.text.fill|color:0xffffff&style=feature:water|element:labels.text.stroke|color:0x000000&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY})`,
+          imageRendering: 'crisp-edges'
+        }}
+      />
       
       {/* Nebula Core (more pronounced) */}
       <div className="absolute inset-0 bg-gradient-radial from-purple-700/60 via-purple-900/30 to-transparent" />
@@ -1094,139 +1112,163 @@ export default function DashboardV1() {
       <div className="absolute top-3/4 right-1/4 w-[24rem] h-[24rem] bg-gradient-radial from-blue-500/22 via-blue-600/10 to-transparent animate-pulse" style={{ animationDelay: '1s' }} />
       <div className="absolute bottom-1/4 left-1/3 w-[22rem] h-[22rem] bg-gradient-radial from-pink-500/18 via-pink-600/8 to-transparent animate-pulse" style={{ animationDelay: '2s' }} />
       
-      {/* Deep Space Overlay (slightly less dark to let nebula show through) */}
-      <div className="absolute inset-0 bg-black/35 backdrop-blur-sm" />
+      {/* Simple Dark Overlay */}
+      <div className="absolute inset-0 bg-black/60" />
       
-      <div className="relative z-10 flex h-screen">
-        {/* Floating Dark Glass Sidebar */}
-        <aside className="w-64 bg-black/25 backdrop-blur-2xl border border-gray-500/30 flex flex-col rounded-2xl shadow-2xl ml-6 my-6">
-          {/* Back to Search Button - First Item */}
-          <div className="p-3">
-            <button
-              onClick={() => router.push('/search')}
-              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-gray-500/15 hover:bg-gray-500/25 transition-colors text-gray-400 hover:text-gray-200"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-                <span className="text-xs font-medium">Back to Search</span>
-            </button>
-          </div>
-
-          {/* Logo Area */}
-          <div className="p-4 border-b border-gray-500/30">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center shadow-lg">
-                    <span className="text-sm font-bold text-white">E</span>
+      <div className="relative z-10 min-h-screen">
+        {/* Floating Top Menu Bar - Full width above sidebar */}
+        <header className="fixed top-0 left-0 right-0 z-[999] p-6">
+          <div className="w-full max-w-7xl mx-auto">
+            <div className="flex items-center justify-between rounded-2xl px-6 py-4 shadow-2xl backdrop-blur-xl border border-gray-500/30 bg-black/20">
+              {/* Left side - Logo and Back button */}
+              <div className="flex items-center gap-6">
+                <button
+                  onClick={() => router.push('/search')}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-500/10 hover:bg-gray-500/20 transition-colors text-gray-300 hover:text-gray-100"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                  </svg>
+                  <span className="text-sm font-medium">Back to Search</span>
+                </button>
+                
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl shadow-lg overflow-hidden">
+                    <Image
+                      src="/logo.png"
+                      alt="Appraisor Logo"
+                      width={40}
+                      height={40}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
-                  <span className="font-semibold text-gray-100">Estimo</span>
-            </div>
-          </div>
-
-          {/* Section Header */}
-            <div className="px-4 py-2">
-              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">SECTIONS</span>
-            </div>
-
-          {/* Navigation */}
-          <nav className="flex-1 p-4">
-            <ul className="space-y-2">
-              {sections.map((section) => (
-                <li key={section.id}>
-                  <button
-                    onClick={() => {
-                      setActiveSection(section.id)
-                      updateSectionInUrl(section.id)
-                      if (section.id !== 'property-details') {
-                        setRightPanelOpen(false)
-                        setActiveSubsection(null)
-                      }
-                      if (section.id !== 'sold-comparables') {
-                        setComparablesPanelOpen(false)
-                        setSelectedTransaction(null)
-                      }
-                    }}
-                    className={`w-full flex items-center gap-3 px-4 py-2 rounded-xl text-left transition-all duration-300 border ${
-                      activeSection === section.id
-                        ? 'bg-gray-500/20 text-gray-100 shadow-lg border-gray-400/50'
-                        : 'text-gray-300 hover:text-gray-100 hover:bg-gray-500/10 border-transparent hover:border-gray-500/30'
-                    }`}
-                  >
-                    <span className="text-lg">{section.icon}</span>
-                      <span className="font-medium text-sm">{section.label}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </nav>
-        </aside>
-
-        {/* Main Content */}
-        <main className="flex-1 overflow-y-auto flex">
-          {/* Left Content Area */}
-          <div className="flex-1">
-          {/* Dark Glass Header */}
-          <header className="sticky top-0 z-40 p-4 pb-2">
-            <div className="bg-black/20 backdrop-blur-xl border border-gray-500/30 rounded-2xl px-6 py-3 shadow-2xl">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                    <h1 className="text-xl font-bold text-gray-100">
-                      Property Dashboard
-                    </h1>
+                  <span className="text-xl font-bold text-white">Appraisor</span>
+                </div>
+              </div>
+              
+              {/* Right side - Credits and User menu */}
+              <div className="flex items-center gap-6">
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                  </div>
+                  <span className="text-white font-medium text-sm">30 Credits available</span>
                 </div>
                 
-                {/* Right side - Credits indicator and Profile avatar */}
-                <div className="flex items-center gap-6">
-                  {/* Credits indicator */}
-                  <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                      <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                      </svg>
-                    </div>
-                    <span className="text-white font-medium text-sm">30 credits available</span>
-                  </div>
-                  
-                  {/* User profile with dropdown menu */}
-                  <WorkingUserMenu user={session.user || { name: 'User', email: 'user@example.com' }} />
-                </div>
+                <WorkingUserMenu user={session.user || { name: 'User', email: 'user@example.com' }} />
               </div>
             </div>
-          </header>
+          </div>
+        </header>
 
-          {/* Content Area */}
-          <div className="p-4 pt-2">
-            {loading ? (
-              /* Loading Spinner */
-              <div className="flex items-center justify-center min-h-[400px]">
-                <div className="bg-black/20 backdrop-blur-xl border border-gray-500/30 rounded-2xl p-8 shadow-2xl">
-                  <div className="flex flex-col items-center gap-4">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
-                    <p className="text-gray-300">Loading property data...</p>
+        {/* Main Content */}
+        <main className="relative z-10 h-screen flex flex-col">
+          {/* Scrollable Content Container - starts from top to scroll under header */}
+          <div className="flex-1 overflow-y-auto px-6 pt-32 pb-6">
+            <div className="w-full max-w-7xl mx-auto">
+              <div className="flex gap-8 w-full">
+                {/* Sidebar Navigation */}
+                <aside className="w-64 flex-shrink-0 flex-grow-0" style={{ width: '256px' }}>
+                  <div className="bg-black/20 backdrop-blur-xl border border-gray-500/30 rounded-2xl p-6 shadow-2xl">
+                    <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-4">Sections</h2>
+                    <nav className="space-y-2">
+                      {sections.map((section) => (
+                        <button
+                          key={section.id}
+                          onClick={() => {
+                            setActiveSection(section.id)
+                            updateSectionInUrl(section.id)
+                            if (section.id !== 'property-details') {
+                              setRightPanelOpen(false)
+                              setActiveSubsection(null)
+                            }
+                            if (section.id !== 'sold-comparables') {
+                              setComparablesPanelOpen(false)
+                              setSelectedTransaction(null)
+                            }
+                          }}
+                          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all duration-200 ${
+                            activeSection === section.id
+                              ? 'bg-purple-500/20 text-purple-100 border border-purple-400/30'
+                              : 'text-gray-300 hover:text-gray-100 hover:bg-gray-500/10'
+                          }`}
+                        >
+                          <span className="text-lg">{section.icon}</span>
+                          <span className="font-medium text-sm">{section.label}</span>
+                        </button>
+                      ))}
+                    </nav>
                   </div>
-                </div>
-              </div>
-            ) : error ? (
-              /* Error State */
-              <div className="bg-red-900/20 backdrop-blur-xl border border-red-500/30 rounded-2xl p-6 shadow-2xl">
-                <div className="flex items-center gap-3">
-                  <div className="text-2xl">⚠️</div>
-                  <div>
-                    <h2 className="text-xl font-semibold text-red-100 mb-1">Error Loading Property</h2>
-                    <p className="text-red-300">{error}</p>
+                </aside>
+
+                {/* Main Content */}
+                <div className="flex-1 min-w-0 w-full" style={{ width: 'calc(100% - 256px - 2rem)' }}>
+                  <div className="bg-black/20 backdrop-blur-xl border border-gray-500/30 rounded-2xl shadow-2xl overflow-hidden w-full min-h-[600px]" style={{ width: '100%', minWidth: '600px' }}>
+                {loading ? (
+                  /* Loading Spinner */
+                  <div className="p-8 w-full">
+                    <div className="flex items-center gap-3 mb-8">
+                      <span className="text-2xl">🏠</span>
+                      <h1 className="text-2xl font-bold text-gray-100">Property Details</h1>
+                    </div>
+                    <div className="space-y-8">
+                      {/* Property Overview Skeleton */}
+                      <div className="space-y-4">
+                        <div className="h-8 bg-gray-700/30 rounded w-3/4 animate-pulse"></div>
+                        <div className="h-6 bg-gray-700/30 rounded w-1/2 animate-pulse"></div>
+                        <div className="flex flex-wrap gap-4">
+                          <div className="h-8 bg-gray-700/30 rounded w-24 animate-pulse"></div>
+                          <div className="h-8 bg-gray-700/30 rounded w-24 animate-pulse"></div>
+                          <div className="h-8 bg-gray-700/30 rounded w-24 animate-pulse"></div>
+                          <div className="h-8 bg-gray-700/30 rounded w-24 animate-pulse"></div>
+                        </div>
+                      </div>
+                      
+                      {/* Maps Skeleton */}
+                      <div className="space-y-4">
+                        <div className="h-6 bg-gray-700/30 rounded w-32 animate-pulse"></div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="h-64 bg-gray-700/30 rounded-lg animate-pulse"></div>
+                          <div className="h-64 bg-gray-700/30 rounded-lg animate-pulse"></div>
+                        </div>
+                      </div>
+                      
+                      {/* Local Area Skeleton */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div className="h-16 bg-gray-700/30 rounded-lg animate-pulse"></div>
+                        <div className="h-16 bg-gray-700/30 rounded-lg animate-pulse"></div>
+                        <div className="h-16 bg-gray-700/30 rounded-lg animate-pulse"></div>
+                        <div className="h-16 bg-gray-700/30 rounded-lg animate-pulse"></div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            ) : (
-              /* Section Content */
-              <div className="space-y-8">
-                {activeSection === 'property-details' && propertyData ? (
-              /* Property Details Content */
-              <div className="bg-black/20 backdrop-blur-xl border border-gray-500/30 rounded-2xl p-6 shadow-2xl">
-                <div className="flex items-center gap-3 mb-6">
-                  <span className="text-2xl">{sections.find(s => s.id === activeSection)?.icon}</span>
-                  <h3 className="text-lg font-semibold text-gray-100">{sections.find(s => s.id === activeSection)?.label}</h3>
-                </div>
+                ) : error ? (
+                  /* Error State */
+                  <div className="p-8 w-full">
+                    <div className="flex items-center gap-3 mb-8">
+                      <span className="text-2xl">🏠</span>
+                      <h1 className="text-2xl font-bold text-gray-100">Property Details</h1>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="text-2xl">⚠️</div>
+                      <div>
+                        <h2 className="text-xl font-semibold text-red-100 mb-1">Error Loading Property</h2>
+                        <p className="text-red-300">{error}</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  /* Section Content */
+                  <div className="p-8 w-full">
+                    {activeSection === 'property-details' && propertyData ? (
+                      /* Property Details Content */
+                      <div className="w-full min-h-[500px]" style={{ width: '100%' }}>
+                        <div className="flex items-center gap-3 mb-8">
+                          <span className="text-2xl">{sections.find(s => s.id === activeSection)?.icon}</span>
+                          <h1 className="text-2xl font-bold text-gray-100">{sections.find(s => s.id === activeSection)?.label}</h1>
+                        </div>
                 
                 <div className="space-y-8">
                   {/* Property Overview Section */}
@@ -1244,7 +1286,7 @@ export default function DashboardV1() {
                     </div>
                     
                     {/* Property Details Tags */}
-                    <div className="flex flex-wrap gap-4">
+                    <div className="flex flex-wrap gap-4 min-h-[60px] w-full">
                       {getPropertyValue('property_type.value') !== 'N/A' && (
                         <div className="flex items-center gap-2 bg-gray-500/10 rounded-lg px-4 py-2">
                           <span className="text-gray-400 text-sm">Type:</span>
@@ -1308,15 +1350,15 @@ export default function DashboardV1() {
                     <h2 className="text-lg font-medium text-gray-300 mb-6">Location</h2>
                     
                     {/* Maps Section */}
-                    <div className="mb-4">
+                    <div className="mb-4 min-h-[280px]">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Google Map */}
-                        <div className="relative w-full h-64 rounded-lg overflow-hidden border border-gray-500/30">
+                        <div className="relative w-full h-64 rounded-lg overflow-hidden border border-gray-500/30" style={{ height: '256px' }}>
                           <iframe
                             src={`https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&q=${encodeURIComponent(getPropertyValue('address.street_group_format.address_lines') + ', ' + getPropertyValue('address.street_group_format.postcode'))}&zoom=15&maptype=roadmap`}
                             width="100%"
-                            height="100%"
-                            style={{ border: 0 }}
+                            height="256"
+                            style={{ border: 0, height: '256px' }}
                             allowFullScreen
                             loading="lazy"
                             referrerPolicy="no-referrer-when-downgrade"
@@ -1325,15 +1367,15 @@ export default function DashboardV1() {
                         </div>
                         
                         {/* Interactive Street View */}
-                        <div className="relative w-full h-64 rounded-lg overflow-hidden border border-gray-500/30">
+                        <div className="relative w-full h-64 rounded-lg overflow-hidden border border-gray-500/30" style={{ height: '256px' }}>
                           <iframe
                             src={getStreetViewEmbedUrl(
                               parseFloat(getPropertyValue('location.coordinates.latitude', '0')), 
                               parseFloat(getPropertyValue('location.coordinates.longitude', '0'))
                             )}
                             width="100%"
-                            height="100%"
-                            style={{ border: 0 }}
+                            height="256"
+                            style={{ border: 0, height: '256px' }}
                             allowFullScreen
                             loading="lazy"
                             referrerPolicy="no-referrer-when-downgrade"
@@ -1344,7 +1386,7 @@ export default function DashboardV1() {
                     </div>
                     
                     {/* Local Area Details */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 min-h-[80px]">
                       {getPropertyValue('localities.ward') !== 'N/A' && (
                         <div className="bg-gray-800/20 rounded-lg p-3 border border-gray-600/20">
                           <div className="text-center">
@@ -1460,99 +1502,99 @@ export default function DashboardV1() {
                       })}
                     </div>
                   </div>
-                </div>
-              </div>
-            ) : (
-                  /* Other Sections */
-              <div className="space-y-6">
-                {activeSection === 'investment-calculator' ? (
-                  /* Investment Calculator Section */
-                  <div className="bg-black/20 backdrop-blur-xl border border-gray-500/30 rounded-2xl p-6 shadow-2xl">
-                    <div className="flex items-center justify-between mb-6">
-                      <div className="flex items-center gap-3">
-                        <span className="text-2xl">{sections.find(s => s.id === activeSection)?.icon}</span>
-                        <h3 className="text-lg font-semibold text-gray-100">{sections.find(s => s.id === activeSection)?.label}</h3>
+                        </div>
                       </div>
-                      <button
-                        onClick={async () => {
-                          if (confirm('Are you sure you want to reset all calculator data to defaults? This action cannot be undone.')) {
-                            try {
-                              // Reset calculator data to defaults in database
-                              const response = await fetch('/api/calculator/reset', {
-                                method: 'POST',
-                                headers: {
-                                  'Content-Type': 'application/json',
-                                },
-                                body: JSON.stringify({ uprn }),
-                              })
-                              
-                              if (response.ok) {
-                                // Reload the page to reset the calculator
-                                window.location.reload()
-                              } else {
-                                alert('Failed to reset calculator data. Please try again.')
-                              }
-                            } catch (error) {
-                              console.error('Error resetting calculator data:', error)
-                              alert('Failed to reset calculator data. Please try again.')
-                            }
-                          }
-                        }}
-                        className="px-4 py-2 bg-red-500/20 border border-red-500/50 rounded-lg text-red-300 hover:bg-red-500/30 hover:text-red-200 transition-all duration-200 text-sm font-medium"
-                      >
-                        Reset
-                      </button>
-                    </div>
-                    <InvestmentCalculator uprn={uprn} />
-                  </div>
-                ) : activeSection === 'sold-comparables' ? (
-                  /* Sold Comparables Section */
-                  <div className="bg-black/20 backdrop-blur-xl border border-gray-500/30 rounded-2xl p-6 shadow-2xl">
-                    <div className="flex items-center gap-3 mb-6">
-                      <span className="text-2xl">{sections.find(s => s.id === activeSection)?.icon}</span>
-                      <h3 className="text-lg font-semibold text-gray-100">{sections.find(s => s.id === activeSection)?.label}</h3>
-                    </div>
-                    {propertyData ? (
-                      <ComparablesAnalysis
-                        uprn={uprn}
-                        nearbyTransactions={getPropertyValue('nearby_completed_transactions') || []}
-                        subjectPropertySqm={parseFloat(getPropertyValue('internal_area_square_metres', '0'))}
-                        subjectPropertyStreet={getPropertyValue('address.simplified_format.street', '')}
-                        onTransactionSelect={handleTransactionSelect}
-                      />
                     ) : (
-                      <div className="text-center py-8 text-gray-400">
-                        Loading property data...
+                      /* Other Sections */
+                      <div className="w-full">
+                        {activeSection === 'investment-calculator' ? (
+                          /* Investment Calculator Section */
+                          <div className="w-full">
+                            <div className="flex items-center justify-between mb-6">
+                              <div className="flex items-center gap-3">
+                                <span className="text-2xl">{sections.find(s => s.id === activeSection)?.icon}</span>
+                                <h1 className="text-2xl font-bold text-gray-100">{sections.find(s => s.id === activeSection)?.label}</h1>
+                              </div>
+                              <button
+                                onClick={async () => {
+                                  if (confirm('Are you sure you want to reset all calculator data to defaults? This action cannot be undone.')) {
+                                    try {
+                                      // Reset calculator data to defaults in database
+                                      const response = await fetch('/api/calculator/reset', {
+                                        method: 'POST',
+                                        headers: {
+                                          'Content-Type': 'application/json',
+                                        },
+                                        body: JSON.stringify({ uprn }),
+                                      })
+                                      
+                                      if (response.ok) {
+                                        // Reload the page to reset the calculator
+                                        window.location.reload()
+                                      } else {
+                                        alert('Failed to reset calculator data. Please try again.')
+                                      }
+                                    } catch (error) {
+                                      console.error('Error resetting calculator data:', error)
+                                      alert('Failed to reset calculator data. Please try again.')
+                                    }
+                                  }
+                                }}
+                                className="px-4 py-2 bg-red-500/20 border border-red-500/50 rounded-lg text-red-300 hover:bg-red-500/30 hover:text-red-200 transition-all duration-200 text-sm font-medium"
+                              >
+                                Reset
+                              </button>
+                            </div>
+                            <InvestmentCalculator uprn={uprn} />
+                          </div>
+                        ) : activeSection === 'sold-comparables' ? (
+                          /* Sold Comparables Section */
+                          <div className="w-full">
+                            <div className="flex items-center gap-3 mb-6">
+                              <span className="text-2xl">{sections.find(s => s.id === activeSection)?.icon}</span>
+                              <h1 className="text-2xl font-bold text-gray-100">{sections.find(s => s.id === activeSection)?.label}</h1>
+                            </div>
+                            {propertyData ? (
+                              <ComparablesAnalysis
+                                uprn={uprn}
+                                nearbyTransactions={getPropertyValue('nearby_completed_transactions') || []}
+                                subjectPropertySqm={parseFloat(getPropertyValue('internal_area_square_metres', '0'))}
+                                subjectPropertyStreet={getPropertyValue('address.simplified_format.street', '')}
+                                onTransactionSelect={handleTransactionSelect}
+                              />
+                            ) : (
+                              <div className="text-center py-8 text-gray-400">
+                                Loading property data...
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          /* Other Sections - Empty Layout */
+                          <div className="w-full">
+                            <div className="flex items-center gap-3 mb-6">
+                              <span className="text-2xl">{sections.find(s => s.id === activeSection)?.icon}</span>
+                              <h1 className="text-2xl font-bold text-gray-100">{sections.find(s => s.id === activeSection)?.label}</h1>
+                            </div>
+                            <div className="text-center py-12">
+                              <div className="text-4xl mb-4 opacity-50">📊</div>
+                              <p className="text-gray-400">This section is ready for implementation...</p>
+                              <p className="text-sm text-gray-500 mt-2">Start building your content here</p>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
-                ) : (
-                  /* Other Sections - Empty Layout */
-                  <>
-                    {/* Section Header */}
-                    <div className="bg-black/20 backdrop-blur-xl border border-gray-500/30 rounded-2xl p-6 shadow-2xl">
-                      <div className="flex items-center gap-3 mb-4">
-                        <span className="text-2xl">{sections.find(s => s.id === activeSection)?.icon}</span>
-                        <h3 className="text-lg font-semibold text-gray-100">{sections.find(s => s.id === activeSection)?.label}</h3>
-                      </div>
-                      <div className="text-center py-12">
-                        <div className="text-4xl mb-4 opacity-50">📊</div>
-                        <p className="text-gray-400">This section is ready for implementation...</p>
-                        <p className="text-sm text-gray-500 mt-2">Start building your content here</p>
-                      </div>
-                    </div>
-                  </>
                 )}
                   </div>
-                )}
+                </div>
               </div>
-            )}
-
+            </div>
           </div>
-          </div>
-          
-          {/* Generic Right Panel for Property Details */}
-          <GenericPanel
+        </main>
+        
+        {/* Generic Right Panel for Property Details */}
+        <GenericPanel
             isOpen={activeSection === 'property-details' && (!!activeSubsection || rightPanelOpen)}
             onClose={() => {
               setRightPanelOpen(false)
@@ -1577,18 +1619,17 @@ export default function DashboardV1() {
                 </div>
               )}
             </div>
-          </GenericPanel>
+        </GenericPanel>
 
-          {/* Generic Right Panel for Comparables */}
-          <GenericPanel
+        {/* Generic Right Panel for Comparables */}
+        <GenericPanel
             isOpen={activeSection === 'sold-comparables' && comparablesPanelOpen && !!selectedTransaction}
             onClose={handleCloseComparablesPanel}
             title="Transaction Details"
             isLargeScreen={isLargeScreen}
-          >
-            {selectedTransaction && renderTransactionDetails(selectedTransaction)}
-          </GenericPanel>
-        </main>
+        >
+          {selectedTransaction && renderTransactionDetails(selectedTransaction)}
+        </GenericPanel>
 
       </div>
     </div>

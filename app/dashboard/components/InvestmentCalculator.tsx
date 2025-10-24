@@ -1169,7 +1169,7 @@ export default function InvestmentCalculator({ uprn }: { uprn: string }) {
 
       {/* Refurbishment Tab */}
       {activeTab === 'refurbishment' && (
-        <div className="max-w-4xl">
+        <div className="w-full">
           <CalculatorSection title="Refurbishment Items" icon="🔨">
             <div className="space-y-3">
               {refurbItems.map((item, index) => (
@@ -1229,7 +1229,7 @@ export default function InvestmentCalculator({ uprn }: { uprn: string }) {
 
       {/* Funding Tab */}
       {activeTab === 'funding' && (
-        <div className="max-w-6xl">
+        <div className="w-full">
           <CalculatorSection title="Funding Sources" icon="💰">
             <div className="space-y-3">
               {fundingSources.map((source, index) => (
@@ -1414,7 +1414,7 @@ export default function InvestmentCalculator({ uprn }: { uprn: string }) {
 
       {/* Exit Strategy Tab */}
       {activeTab === 'exit' && (
-        <div className="max-w-4xl">
+        <div className="w-full">
           <CalculatorSection title="Exit Strategy" icon="🚪">
             <div className="space-y-4">
               <div className="space-y-3">
