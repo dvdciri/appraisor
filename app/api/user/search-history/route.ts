@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
       LIMIT 50
     `, [userId])
 
-    const searches = searchHistoryResult.rows.map(row => ({
+    const searches = searchHistoryResult.rows.map((row: any) => ({
       uprn: row.uprn,
       address: row.address || 'Address not available',
       searched_at: row.searched_at
