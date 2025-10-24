@@ -57,12 +57,18 @@ export default function AllSearches({ onBack }: AllSearchesProps) {
 
   if (loading) {
     return (
-      <div className="border border-gray-500/50 rounded-2xl p-6 shadow-2xl" style={{ backgroundColor: 'rgba(30, 15, 45, 0.9)' }}>
-        <div className="animate-pulse">
-          <div className="h-4 bg-gray-700 rounded w-1/3 mb-2"></div>
-          <div className="space-y-2">
-            <div className="h-3 bg-gray-700 rounded w-full"></div>
-            <div className="h-3 bg-gray-700 rounded w-2/3"></div>
+      <div className="relative rounded-2xl p-6 shadow-2xl backdrop-blur-md overflow-hidden">
+        {/* Simple background for all searches box */}
+        <div className="absolute inset-0 rounded-2xl backdrop-blur-md" style={{ backgroundColor: 'rgba(30, 15, 45, 0.6)' }} />
+        
+        {/* Content with proper z-index */}
+        <div className="relative z-10">
+          <div className="animate-pulse">
+            <div className="h-4 bg-gray-700 rounded w-1/3 mb-2"></div>
+            <div className="space-y-2">
+              <div className="h-3 bg-gray-700 rounded w-full"></div>
+              <div className="h-3 bg-gray-700 rounded w-2/3"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -70,7 +76,12 @@ export default function AllSearches({ onBack }: AllSearchesProps) {
   }
 
   return (
-    <div className="border border-gray-500/50 rounded-2xl p-6 shadow-2xl" style={{ backgroundColor: 'rgba(30, 15, 45, 0.9)' }}>
+    <div className="relative rounded-2xl p-6 shadow-2xl backdrop-blur-md overflow-hidden">
+      {/* Simple background for all searches box */}
+      <div className="absolute inset-0 rounded-2xl backdrop-blur-md" style={{ backgroundColor: 'rgba(30, 15, 45, 0.6)' }} />
+      
+      {/* Content with proper z-index */}
+      <div className="relative z-10">
       {/* Header with back button */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
@@ -136,6 +147,7 @@ export default function AllSearches({ onBack }: AllSearchesProps) {
             </div>
           ))
         )}
+      </div>
       </div>
     </div>
   )

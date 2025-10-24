@@ -42,12 +42,18 @@ export default function RecentSearches({ onShowAll }: RecentSearchesProps) {
 
   if (loading) {
     return (
-      <div className="border border-gray-500/50 rounded-2xl p-6 shadow-2xl" style={{ backgroundColor: 'rgba(30, 15, 45, 0.9)' }}>
-        <div className="animate-pulse">
-          <div className="h-4 bg-gray-700 rounded w-1/3 mb-2"></div>
-          <div className="space-y-2">
-            <div className="h-3 bg-gray-700 rounded w-full"></div>
-            <div className="h-3 bg-gray-700 rounded w-2/3"></div>
+      <div className="relative rounded-2xl p-8 shadow-2xl animate-enter-subtle flex flex-col overflow-hidden backdrop-blur-md">
+        {/* Simple background for recent searches box */}
+        <div className="absolute inset-0 rounded-2xl backdrop-blur-md" style={{ backgroundColor: 'rgba(30, 15, 45, 0.6)' }} />
+        
+        {/* Content with proper z-index */}
+        <div className="relative z-10 flex flex-col h-full">
+          <div className="animate-pulse">
+            <div className="h-4 bg-gray-700 rounded w-1/3 mb-2"></div>
+            <div className="space-y-2">
+              <div className="h-3 bg-gray-700 rounded w-full"></div>
+              <div className="h-3 bg-gray-700 rounded w-2/3"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -56,46 +62,55 @@ export default function RecentSearches({ onShowAll }: RecentSearchesProps) {
 
   if (searches.length === 0) {
     return (
-      <div className="border border-gray-500/50 rounded-2xl p-6 shadow-2xl" style={{ backgroundColor: 'rgba(30, 15, 45, 0.9)' }}>
-        <h3 className="text-white font-medium mb-2">Recent Searches</h3>
-        <p className="text-gray-400 text-sm">No recent searches yet</p>
+      <div className="relative rounded-2xl p-8 shadow-2xl animate-enter-subtle flex flex-col overflow-hidden backdrop-blur-md">
+        {/* Simple background for recent searches box */}
+        <div className="absolute inset-0 rounded-2xl backdrop-blur-md" style={{ backgroundColor: 'rgba(30, 15, 45, 0.6)' }} />
+        
+        {/* Content with proper z-index */}
+        <div className="relative z-10 flex flex-col h-full">
+          <h3 className="text-white font-medium mb-2">Recent Searches</h3>
+          <p className="text-gray-400 text-sm">No recent searches yet</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="border border-gray-500/50 rounded-2xl p-6 shadow-2xl" style={{ backgroundColor: 'rgba(30, 15, 45, 0.9)' }}>
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-white font-medium">Recent Searches</h3>
-        {searches.length > 3 && onShowAll && (
-          <button
-            onClick={onShowAll}
-            className="text-purple-400 hover:text-purple-300 text-sm font-medium transition-colors"
-          >
-            See All ({searches.length})
-          </button>
-        )}
-      </div>
-      <div className="space-y-2">
-        {searches.slice(0, 3).map((search) => (
-          <div
-            key={search.uprn}
-            onClick={() => handleSearchClick(search.uprn)}
-            className="flex items-center justify-between p-2 rounded-lg bg-gray-800/30 hover:bg-gray-700/30 cursor-pointer transition-colors"
-          >
-            <div className="flex-1 min-w-0">
-              <p className="text-white text-sm font-medium truncate">
-                {search.address}
-              </p>
-              <p className="text-gray-400 text-xs">
-                {new Date(search.searched_at).toLocaleDateString()}
-              </p>
+    <div className="relative rounded-2xl p-8 shadow-2xl animate-enter-subtle flex flex-col overflow-hidden backdrop-blur-md" style={{ backgroundColor: 'rgba(30, 15, 45, 0.6)' }}>
+      {/* Content with proper z-index */}
+      <div className="relative z-10 flex flex-col h-full">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-white font-medium">Recent Searches</h3>
+          {searches.length > 3 && onShowAll && (
+            <button
+              onClick={onShowAll}
+              className="text-purple-400 hover:text-purple-300 text-sm font-medium transition-colors"
+            >
+              See All ({searches.length})
+            </button>
+          )}
+        </div>
+        <div className="space-y-2">
+          {searches.slice(0, 3).map((search) => (
+            <div
+              key={search.uprn}
+              onClick={() => handleSearchClick(search.uprn)}
+              className="flex items-center justify-between p-2 rounded-lg bg-gray-800/30 hover:bg-gray-700/30 cursor-pointer transition-colors"
+            >
+              <div className="flex-1 min-w-0">
+                <p className="text-white text-sm font-medium truncate">
+                  {search.address}
+                </p>
+                <p className="text-gray-400 text-xs">
+                  {new Date(search.searched_at).toLocaleDateString()}
+                </p>
+              </div>
+              <svg className="w-4 h-4 text-gray-400 ml-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
             </div>
-            <svg className="w-4 h-4 text-gray-400 ml-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   )

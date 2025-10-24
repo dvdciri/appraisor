@@ -348,10 +348,8 @@ export default function SearchPage() {
       
       case 'analyzing':
         return (
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-bg-subtle border-t-accent mx-auto mb-4"></div>
-            <h2 className="text-xl font-semibold text-fg-primary mb-2">Analyzing Property</h2>
-            <p className="text-fg-muted">Please wait while we gather property information...</p>
+          <div className="text-center pt-4">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-bg-subtle border-t-accent mx-auto"></div>
           </div>
         )
       
@@ -364,9 +362,9 @@ export default function SearchPage() {
     <div className="min-h-screen relative overflow-hidden">
       {/* Google Maps Static Background */}
       <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat blur-sm"
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: `url(https://maps.googleapis.com/maps/api/staticmap?center=${mapCenter}&zoom=11&size=3840x2160&maptype=roadmap&scale=2&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY})`,
+          backgroundImage: `url(https://maps.googleapis.com/maps/api/staticmap?center=${mapCenter}&zoom=11&size=3840x2160&maptype=roadmap&scale=2&style=feature:all|element:geometry|color:0x2d1b69&style=feature:water|element:geometry|color:0x1a0b3d&style=feature:road|element:geometry.fill|color:0x4c1d95&style=feature:all|element:labels.text.fill|color:0xffffff&style=feature:all|element:labels.text.stroke|color:0x000000&style=feature:landscape|element:geometry|color:0x1a0b3d&style=feature:poi|element:geometry|color:0x2d1b69&style=feature:transit|element:geometry|color:0x1a0b3d&style=feature:administrative|element:geometry|color:0x4c1d95&style=feature:administrative.country|element:labels.text.fill|color:0xffffff&style=feature:administrative.country|element:labels.text.stroke|color:0x000000&style=feature:administrative.land_parcel|element:labels.text.fill|color:0xffffff&style=feature:administrative.land_parcel|element:labels.text.stroke|color:0x000000&style=feature:landscape.natural|element:geometry|color:0x1a0b3d&style=feature:poi.business|element:geometry|color:0x2d1b69&style=feature:poi.park|element:geometry|color:0x2d1b69&style=feature:poi.park|element:labels.text.fill|color:0xffffff&style=feature:poi.park|element:labels.text.stroke|color:0x000000&style=feature:road.arterial|element:geometry|color:0x4c1d95&style=feature:road.highway|element:geometry|color:0x4c1d95&style=feature:road.highway.controlled_access|element:geometry|color:0x4c1d95&style=feature:road.local|element:labels.text.fill|color:0xffffff&style=feature:road.local|element:labels.text.stroke|color:0x000000&style=feature:transit.line|element:geometry|color:0x1a0b3d&style=feature:transit.station|element:geometry|color:0x2d1b69&style=feature:water|element:labels.text.fill|color:0xffffff&style=feature:water|element:labels.text.stroke|color:0x000000&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY})`,
           imageRendering: 'crisp-edges'
         }}
       />
@@ -376,7 +374,7 @@ export default function SearchPage() {
       
       {/* Floating Top Menu Bar */}
       <header className="fixed top-0 left-0 right-0 z-[999] p-6">
-        <div className="flex items-center justify-between rounded-2xl px-6 py-4 shadow-2xl backdrop-blur-md" style={{ backgroundColor: 'rgba(30, 15, 45, 0.8)' }}>
+        <div className="flex items-center justify-between rounded-2xl px-6 py-4 shadow-2xl backdrop-blur-md" style={{ backgroundColor: 'rgba(30, 15, 45, 0.6)' }}>
           {/* Left side - Appraisor branding */}
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl shadow-lg overflow-hidden">
@@ -439,18 +437,18 @@ export default function SearchPage() {
                   /* Fixed positioned search box for address step */
                   <div className="fixed top-32 left-6 right-6 z-40">
                     <div className="w-full max-w-2xl mx-auto">
-                      <div className="relative rounded-2xl p-8 shadow-2xl animate-enter-subtle flex flex-col overflow-hidden h-[calc(100vh-10rem)]">
+                      <div className="relative rounded-2xl p-8 shadow-2xl animate-enter-subtle flex flex-col overflow-hidden h-[calc(100vh-10rem)] border border-gray-500/50 backdrop-blur-md">
                         {/* Simple background for search box */}
-                        <div className="absolute inset-0 rounded-2xl" style={{ backgroundColor: 'rgba(30, 15, 45, 0.9)' }} />
+                        <div className="absolute inset-0 rounded-2xl backdrop-blur-md" style={{ backgroundColor: 'rgba(30, 15, 45, 0.6)' }} />
                         
                         {/* Content with proper z-index */}
                         <div className="relative z-10 flex flex-col h-full">
-                          <div className="text-center mb-6 flex-shrink-0">
-                            <h1 className="text-2xl font-bold text-white mb-2">Search for a property</h1>
-                            <p className="text-gray-300 text-sm">
-                              Find comprehensive insights for any property
-                            </p>
-                          </div>
+                        <div className="text-center mb-6 flex-shrink-0">
+                          <h1 className="text-2xl font-bold text-white mb-2">Property Insights</h1>
+                          <p className="text-gray-300 text-sm">
+                            Discover comprehensive data and analysis for any property
+                          </p>
+                        </div>
                           
                           <div className="flex-1 flex flex-col min-h-0">
                             {renderCurrentStep()}
@@ -462,19 +460,24 @@ export default function SearchPage() {
                 ) : (
                   /* Normal search box for other steps */
                   <div className="mb-6">
-                    <div className={`relative rounded-2xl p-8 shadow-2xl animate-enter-subtle flex flex-col overflow-hidden ${
-                      currentStep === 'postcode' ? 'h-auto' : 'h-full min-h-[400px]'
+                    <div className={`relative rounded-2xl p-8 shadow-2xl animate-enter-subtle flex flex-col overflow-hidden border border-gray-500/50 backdrop-blur-md ${
+                      currentStep === 'postcode' ? 'h-auto' : 
+                      currentStep === 'analyzing' ? 'h-auto' : 'h-full min-h-[400px]'
                     }`}>
                       {/* Simple background for search box */}
-                      <div className="absolute inset-0 rounded-2xl" style={{ backgroundColor: 'rgba(30, 15, 45, 0.9)' }} />
+                      <div className="absolute inset-0 rounded-2xl backdrop-blur-md" style={{ backgroundColor: 'rgba(30, 15, 45, 0.6)' }} />
                       
                       {/* Content with proper z-index */}
                       <div className="relative z-10 flex flex-col h-full">
                         <div className="text-center mb-6 flex-shrink-0">
-                          <h1 className="text-2xl font-bold text-white mb-2">Search for a property</h1>
+                          <h1 className="text-2xl font-bold text-white mb-2">
+                            {currentStep === 'analyzing' ? 'Analyzing Property Data' : 'Search for a property'}
+                          </h1>
                           <p className="text-gray-300 text-sm">
-                            {currentStep === 'postcode' && 'Find comprehensive insights for any property'}
-                            {currentStep === 'analyzing' && 'Analyzing your property...'}
+                            {currentStep === 'analyzing' 
+                              ? 'Extracting market insights, comparables, and valuation metrics...'
+                              : 'Discover comprehensive data and analysis for any property'
+                            }
                           </p>
                         </div>
                         
