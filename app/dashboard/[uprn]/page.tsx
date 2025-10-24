@@ -2,9 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
+import { useSession } from 'next-auth/react'
+import Image from 'next/image'
 import InvestmentCalculator from '../components/InvestmentCalculator'
 import ComparablesAnalysis, { renderTransactionDetails } from '../components/ComparablesAnalysis'
 import GenericPanel from '../components/GenericPanel'
+import WorkingUserMenu from '../../components/WorkingUserMenu'
 
 type Section = 'property-details' | 'market-analysis' | 'sold-comparables' | 'investment-calculator' | 'ai-refurbishment' | 'risk-assessment'
 
@@ -822,6 +825,7 @@ const PlotBoundaryVisualization = ({ coordinates }: { coordinates: any }) => {
 }
 
 export default function DashboardV1() {
+  const { data: session, status } = useSession()
   const params = useParams()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -863,6 +867,15 @@ export default function DashboardV1() {
     return `https://www.google.com/maps/embed/v1/streetview?key=${apiKey}&location=${latitude},${longitude}&heading=0&pitch=0&fov=90`
   }
 
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (status === 'loading') return // Still loading
+    if (!session) {
+      router.push('/login')
+      return
+    }
+  }, [session, status, router])
 
   // Handle screen size detection
   useEffect(() => {
@@ -1013,6 +1026,20 @@ export default function DashboardV1() {
     }
   }
 
+  // Show loading while checking authentication
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-4 border-bg-subtle border-t-accent"></div>
+      </div>
+    )
+  }
+
+  // Don't render if not authenticated
+  if (!session) {
+    return null
+  }
+
   return (
     <div className="min-h-screen relative overflow-hidden">
       {/* Deep Space Base */}
@@ -1141,21 +1168,29 @@ export default function DashboardV1() {
           {/* Dark Glass Header */}
           <header className="sticky top-0 z-40 p-4 pb-2">
             <div className="bg-black/20 backdrop-blur-xl border border-gray-500/30 rounded-2xl px-6 py-3 shadow-2xl">
-              <div className="flex items-center">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center">
                     <h1 className="text-xl font-bold text-gray-100">
                       Property Dashboard
                     </h1>
                 </div>
-              </div>
-              {/* Address Subtitle */}
-              {propertyData && (
-                <div className="mt-2">
-                  <p className="text-sm text-gray-300">
-                    {getPropertyValue('address.street_group_format.address_lines')}
-                  </p>
+                
+                {/* Right side - Credits indicator and Profile avatar */}
+                <div className="flex items-center gap-6">
+                  {/* Credits indicator */}
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                      <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                      </svg>
+                    </div>
+                    <span className="text-white font-medium text-sm">30 Credits available</span>
+                  </div>
+                  
+                  {/* User profile with dropdown menu */}
+                  <WorkingUserMenu user={session.user || { name: 'User', email: 'user@example.com' }} />
                 </div>
-              )}
+              </div>
             </div>
           </header>
 
