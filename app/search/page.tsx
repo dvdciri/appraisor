@@ -491,9 +491,7 @@ export default function SearchPage() {
 
                 {/* Recent Searches Section */}
                 {currentStep === 'postcode' && (
-                  <div className="animate-enter-subtle-delayed">
-                    <RecentSearches onShowAll={handleShowAllSearches} />
-                  </div>
+                  <RecentSearches onShowAll={handleShowAllSearches} />
                 )}
               </>
             ) : (

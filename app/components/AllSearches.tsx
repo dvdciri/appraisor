@@ -93,7 +93,7 @@ export default function AllSearches({ onBack }: AllSearchesProps) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <h3 className="text-white font-medium">All Searches ({searches.length})</h3>
+          <h3 className="text-white font-medium">Previous Searches ({searches.length})</h3>
         </div>
       </div>
 
