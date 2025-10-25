@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 
 interface Listing {
@@ -46,6 +46,7 @@ interface NearbyListingsProps {
     latitude: number
     longitude: number
   }
+  mainPropertyPostcode?: string
 }
 
 const SALE_PRICE_OPTIONS = [
@@ -118,10 +119,10 @@ const DISTANCE_OPTIONS = [
   const BATH_OPTIONS = ['Any', '1', '2', '3', '4', '5+']
 
 const SORT_OPTIONS = [
-  { label: 'Highest price', value: 'price-high' },
-  { label: 'Lowest price', value: 'price-low' },
-  { label: 'Newest listed', value: 'newest' },
-  { label: 'Oldest listed', value: 'oldest' },
+  { label: 'Highest price first', value: 'price-high' },
+  { label: 'Lowest price first', value: 'price-low' },
+  { label: 'Newest listed first', value: 'newest' },
+  { label: 'Oldest listed first', value: 'oldest' },
 ]
 
 // Helper functions
@@ -176,7 +177,7 @@ const calculateNearbyCoordinates = (
   }
 }
 
-export default function NearbyListings({ listings, mainPropertyLocation }: NearbyListingsProps) {
+export default function NearbyListings({ listings, mainPropertyLocation, mainPropertyPostcode }: NearbyListingsProps) {
   const [activeTab, setActiveTab] = useState<'sale' | 'rent'>('sale')
   const [currentImageIndex, setCurrentImageIndex] = useState<Record<string, number>>({})
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
@@ -290,14 +291,48 @@ export default function NearbyListings({ listings, mainPropertyLocation }: Nearb
     }))
   }
 
+
   const ListingCard = ({ listing }: { listing: Listing }) => {
     const imageIndex = currentImageIndex[listing.listing_id] || 0
     const allImages = [...listing.images].slice(0, 10) // Limit to first 10 images
     const currentImage = allImages[imageIndex] || listing.main_image_url
     const hasMultipleImages = allImages.length > 1
 
+    const handleListingClick = (e: React.MouseEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      console.log('Listing clicked:', listing)
+      
+      // Add visual feedback
+      const target = e.currentTarget as HTMLElement
+      target.style.transform = 'scale(0.98)'
+      setTimeout(() => {
+        target.style.transform = ''
+      }, 150)
+      
+      if (listing.source === 'rightmove') {
+        const url = getRightmoveUrl(listing.listing_id)
+        console.log('Opening Rightmove URL:', url)
+        
+        // Try to open in new tab, fallback to current tab if popup blocked
+        const newWindow = window.open(url, '_blank', 'noopener,noreferrer')
+        
+        if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+          // Popup was blocked, fallback to current tab
+          console.log('Popup blocked, opening in current tab')
+          window.location.href = url
+        }
+      } else {
+        console.log('Non-Rightmove listing clicked, source:', listing.source)
+        // For other sources, we could add different handling here
+      }
+    }
+
     return (
-      <div className="bg-black/20 border border-gray-500/30 rounded-xl p-6 mb-6 hover:bg-black/30 transition-all duration-200">
+      <div 
+        className="bg-black/20 border border-gray-500/30 rounded-xl p-6 mb-6 hover:bg-black/30 transition-all duration-200 cursor-pointer"
+        onClick={handleListingClick}
+      >
         <div className="flex gap-6">
           {/* Left Side - Image Carousel */}
           <div className="w-[40%] relative group">
@@ -306,7 +341,7 @@ export default function NearbyListings({ listings, mainPropertyLocation }: Nearb
                 src={currentImage}
                 alt={`${listing.address.royal_mail_format.thoroughfare}`}
                 fill
-                className="object-cover"
+                className="object-cover pointer-events-none"
                 sizes="(max-width: 768px) 100vw, 40vw"
               />
               
@@ -314,16 +349,22 @@ export default function NearbyListings({ listings, mainPropertyLocation }: Nearb
               {hasMultipleImages && (
                 <>
                   <button
-                    onClick={() => handleImageNavigation(listing.listing_id, 'prev', allImages.length)}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleImageNavigation(listing.listing_id, 'prev', allImages.length)
+                    }}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
                   </button>
                   <button
-                    onClick={() => handleImageNavigation(listing.listing_id, 'next', allImages.length)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleImageNavigation(listing.listing_id, 'next', allImages.length)
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -339,8 +380,11 @@ export default function NearbyListings({ listings, mainPropertyLocation }: Nearb
                 {allImages.map((_, index) => (
                   <button
                     key={index}
-                    onClick={() => setCurrentImageIndex(prev => ({ ...prev, [listing.listing_id]: index }))}
-                    className={`w-2 h-2 rounded-full transition-all ${
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setCurrentImageIndex(prev => ({ ...prev, [listing.listing_id]: index }))
+                    }}
+                    className={`w-2 h-2 rounded-full transition-all pointer-events-auto ${
                       imageIndex === index ? 'bg-purple-400' : 'bg-gray-600'
                     }`}
                   />
@@ -350,7 +394,7 @@ export default function NearbyListings({ listings, mainPropertyLocation }: Nearb
           </div>
 
           {/* Right Side - Property Details */}
-          <div className="flex-1">
+          <div className="flex-1 pointer-events-none">
             {/* Address */}
             <h3 className="text-xl font-semibold text-gray-100 mb-2">
               {listing.address.royal_mail_format.thoroughfare}
@@ -416,7 +460,8 @@ export default function NearbyListings({ listings, mainPropertyLocation }: Nearb
                 href={getRightmoveUrl(listing.listing_id)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-block bg-gradient-to-r from-purple-500/80 to-pink-500/80 hover:from-purple-500 hover:to-pink-500 text-white px-6 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+                onClick={(e) => e.stopPropagation()}
+                className="inline-block bg-gradient-to-r from-purple-500/80 to-pink-500/80 hover:from-purple-500 hover:to-pink-500 text-white px-6 py-2 rounded-lg text-sm font-medium transition-all duration-200 pointer-events-auto"
               >
                 View on Rightmove
               </a>
@@ -430,32 +475,31 @@ export default function NearbyListings({ listings, mainPropertyLocation }: Nearb
 
   return (
     <div className="w-full">
-      {/* Tabs */}
-      <div className="flex gap-2 mb-6">
-        <button
-          onClick={() => setActiveTab('sale')}
-          className={`px-6 py-3 rounded-xl font-medium transition-all duration-200 ${
-            activeTab === 'sale'
-              ? 'bg-purple-500/20 text-purple-100 border border-purple-400/30'
-              : 'bg-black/20 text-gray-300 hover:text-gray-100 hover:bg-gray-500/10 border border-transparent'
-          }`}
-        >
-          For Sale
-        </button>
-        <button
-          onClick={() => setActiveTab('rent')}
-          className={`px-6 py-3 rounded-xl font-medium transition-all duration-200 ${
-            activeTab === 'rent'
-              ? 'bg-purple-500/20 text-purple-100 border border-purple-400/30'
-              : 'bg-black/20 text-gray-300 hover:text-gray-100 hover:bg-gray-500/10 border border-transparent'
-          }`}
-        >
-          For Rent
-        </button>
-      </div>
-
       {/* Filters and Sort */}
       <div className="bg-black/20 border border-gray-500/30 rounded-xl p-6 mb-6">
+        {/* Tabs */}
+        <div className="flex gap-2 mb-6">
+          <button
+            onClick={() => setActiveTab('sale')}
+            className={`px-6 py-3 rounded-lg text-base font-semibold transition-all duration-200 ${
+              activeTab === 'sale'
+                ? 'bg-purple-500/20 text-purple-100 border border-purple-400/30'
+                : 'bg-gray-500/10 text-gray-300 hover:bg-gray-500/20 border border-transparent'
+            }`}
+          >
+            For Sale
+          </button>
+          <button
+            onClick={() => setActiveTab('rent')}
+            className={`px-6 py-3 rounded-lg text-base font-semibold transition-all duration-200 ${
+              activeTab === 'rent'
+                ? 'bg-purple-500/20 text-purple-100 border border-purple-400/30'
+                : 'bg-gray-500/10 text-gray-300 hover:bg-gray-500/20 border border-transparent'
+            }`}
+          >
+            For Rent
+          </button>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
           {/* Distance Filter */}
           <div>
@@ -542,65 +586,68 @@ export default function NearbyListings({ listings, mainPropertyLocation }: Nearb
           </div>
         </div>
 
-        {/* Sort and View Toggle */}
-        <div className="flex items-center justify-between">
-          <div className="text-gray-400 text-sm">
-            Showing {filteredAndSortedListings.length} {filteredAndSortedListings.length === 1 ? 'property' : 'properties'}
-          </div>
-          <div className="flex items-center gap-4">
+        {/* Display Options */}
+        <div className="mt-4">
+          <label className="block text-sm text-gray-400 mb-2">Display options</label>
+          <div className="flex items-center gap-2">
+            <div className="bg-black/20 border border-gray-600 rounded-md p-0.5 flex">
+              <button
+                onClick={() => setViewMode('list')}
+                className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
+                  viewMode === 'list'
+                    ? 'bg-purple-600 text-white'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                List view
+              </button>
+              <button
+                onClick={() => setViewMode('map')}
+                className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
+                  viewMode === 'map'
+                    ? 'bg-purple-600 text-white'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                Map view
+              </button>
+            </div>
             
-            {/* Sort */}
-            <div className="flex items-center gap-3">
-              <label className="text-sm text-gray-400">Sort by:</label>
-              <div className="relative">
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="bg-black/40 border border-gray-600 rounded-lg px-4 py-2 pr-12 text-gray-100 focus:outline-none focus:border-purple-400 appearance-none"
-                >
+            <div className="relative">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="bg-black/40 border border-gray-600 rounded-md px-3 py-2 pr-10 text-xs font-medium text-gray-100 focus:outline-none focus:border-purple-400 appearance-none h-8"
+              >
                 {SORT_OPTIONS.map(option => (
                   <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
-                </select>
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
+              </select>
+              <div className="absolute top-1/2 right-2 transform -translate-y-1/2 pointer-events-none">
+                <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
               </div>
             </div>
           </div>
         </div>
+
       </div>
 
-      {/* View Toggle - Compact */}
-      <div className="flex items-center my-4">
-        <div className="bg-black/20 border border-gray-600 rounded-lg p-0.5 flex">
-          <button
-            onClick={() => setViewMode('list')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-              viewMode === 'list'
-                ? 'bg-purple-600 text-white'
-                : 'text-gray-400 hover:text-white'
-            }`}
-          >
-            List view
-          </button>
-          <button
-            onClick={() => setViewMode('map')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-              viewMode === 'map'
-                ? 'bg-purple-600 text-white'
-                : 'text-gray-400 hover:text-white'
-            }`}
-          >
-            Map view
-          </button>
-        </div>
+
+      {/* Dynamic Title */}
+      <div className="mb-4">
+        <h2 className="text-xl font-semibold text-gray-100">
+          Properties {activeTab === 'sale' ? 'for sale' : 'for rent'} in {mainPropertyPostcode || 'this area'}
+        </h2>
+        <p className="text-sm text-gray-400 mt-1">
+          Showing {filteredAndSortedListings.length} {filteredAndSortedListings.length === 1 ? 'property' : 'properties'}
+        </p>
       </div>
 
       {/* Listings */}
       <div>
+        
         {filteredAndSortedListings.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-4xl mb-4 opacity-50">🏠</div>
@@ -618,7 +665,6 @@ export default function NearbyListings({ listings, mainPropertyLocation }: Nearb
             onPropertySelect={setSelectedProperty}
             activeTab={activeTab}
             mainPropertyLocation={mainPropertyLocation}
-            ListingCard={ListingCard}
           />
         )}
       </div>
@@ -632,21 +678,20 @@ function MapView({
   selectedProperty, 
   onPropertySelect,
   activeTab,
-  mainPropertyLocation,
-  ListingCard
+  mainPropertyLocation
 }: { 
   listings: Listing[]
   selectedProperty: Listing | null
   onPropertySelect: (property: Listing | null) => void
   activeTab: 'sale' | 'rent'
   mainPropertyLocation?: { latitude: number; longitude: number }
-  ListingCard: React.ComponentType<{ listing: Listing }>
 }) {
   const mapRef = useRef<HTMLDivElement>(null)
   const [map, setMap] = useState<any>(null)
   const [markers, setMarkers] = useState<any[]>([])
   const [radiusCircle, setRadiusCircle] = useState<any>(null)
   const [selectedMarker, setSelectedMarker] = useState<any>(null)
+  const [infoWindow, setInfoWindow] = useState<any>(null)
 
   // Initialize map
   useEffect(() => {
@@ -775,6 +820,7 @@ function MapView({
     }
   }, [listings, map])
 
+
   // Update markers and radius circle when listings change
   useEffect(() => {
     if (!map || !listings.length) return
@@ -789,11 +835,16 @@ function MapView({
     
     // Clear selected marker
     setSelectedMarker(null)
+    
+    // Close any existing info window
+    if (infoWindow) {
+      infoWindow.close()
+    }
 
     const newMarkers = listings
       .filter(listing => listing.location?.coordinates?.latitude && listing.location?.coordinates?.longitude)
       .map(listing => {
-        const isSelected = selectedProperty && selectedProperty.listing_id === listing.listing_id
+        const price = formatPrice(listing.price, activeTab)
         
         const marker = new (window as any).google.maps.Marker({
           position: { lat: listing.location.coordinates.latitude, lng: listing.location.coordinates.longitude },
@@ -801,20 +852,141 @@ function MapView({
           title: `${listing.address.royal_mail_format.thoroughfare}, ${listing.address.royal_mail_format.post_town}`,
           icon: {
             url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="${isSelected ? '#7c3aed' : '#ec4899'}"/>
-                <circle cx="12" cy="9" r="2.5" fill="#ffffff"/>
-                ${isSelected ? '<circle cx="12" cy="9" r="4" fill="none" stroke="#7c3aed" stroke-width="2"/>' : ''}
+              <svg width="80" height="32" viewBox="0 0 80 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="2" y="2" width="76" height="28" rx="14" fill="white" stroke="#e5e7eb" stroke-width="1"/>
+                <rect x="0" y="0" width="80" height="32" rx="16" fill="white" opacity="0.1"/>
+                <text x="40" y="20" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="600" fill="#1f2937">${price}</text>
+                <polygon points="36,28 40,32 44,28" fill="white"/>
+                <polygon points="36,30 40,34 44,30" fill="#e5e7eb"/>
               </svg>
             `),
-            scaledSize: new (window as any).google.maps.Size(40, 40),
-            anchor: new (window as any).google.maps.Point(20, 40)
+            scaledSize: new (window as any).google.maps.Size(80, 32),
+            anchor: new (window as any).google.maps.Point(40, 32)
           }
         })
+        
+        // Store the price and listing data on the marker for later use
+        ;(marker as any).price = price
+        ;(marker as any).listing = listing
 
         marker.addListener('click', () => {
-          onPropertySelect(listing)
-          setSelectedMarker(marker)
+          console.log('DEBUG: Marker clicked for listing:', listing.listing_id)
+          
+          // Reset all markers to original color first
+          newMarkers.forEach(m => {
+            const markerPrice = (m as any).price
+            m.setIcon({
+              url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                <svg width="80" height="32" viewBox="0 0 80 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="2" y="2" width="76" height="28" rx="14" fill="white" stroke="#e5e7eb" stroke-width="1"/>
+                  <rect x="0" y="0" width="80" height="32" rx="16" fill="white" opacity="0.1"/>
+                  <text x="40" y="20" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="600" fill="#1f2937">${markerPrice}</text>
+                  <polygon points="36,28 40,32 44,28" fill="white"/>
+                  <polygon points="36,30 40,34 44,30" fill="#e5e7eb"/>
+                </svg>
+              `),
+              scaledSize: new (window as any).google.maps.Size(80, 32),
+              anchor: new (window as any).google.maps.Point(40, 32)
+            })
+          })
+          
+          // Close any existing info window
+          if (infoWindow) {
+            infoWindow.close()
+          }
+          
+          // Also try to close any InfoWindow that might be in the DOM
+          const existingInfoWindows = document.querySelectorAll('.gm-style-iw')
+          existingInfoWindows.forEach((iw: Element) => {
+            const closeButton = iw.querySelector('.gm-style-iw-tc + .gm-style-iw-c button')
+            if (closeButton) {
+              (closeButton as HTMLElement).click()
+            }
+          })
+          
+          // Highlight the clicked marker
+          marker.setIcon({
+            url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+              <svg width="80" height="32" viewBox="0 0 80 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="2" y="2" width="76" height="28" rx="14" fill="#7c3aed" stroke="#6d28d9" stroke-width="2"/>
+                <rect x="0" y="0" width="80" height="32" rx="16" fill="#7c3aed" opacity="0.1"/>
+                <text x="40" y="20" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="600" fill="white">${price}</text>
+                <polygon points="36,28 40,32 44,28" fill="#7c3aed"/>
+                <polygon points="36,30 40,34 44,30" fill="#6d28d9"/>
+              </svg>
+            `),
+            scaledSize: new (window as any).google.maps.Size(80, 32),
+            anchor: new (window as any).google.maps.Point(40, 32)
+          })
+          
+          // Get the first image for the popup
+          const popupImage = listing.main_image_url || listing.images?.[0] || ''
+          
+          // Create properly styled InfoWindow content
+          const infoWindowContent = `
+            <div style="width: 200px; padding: 12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+              <div style="margin-bottom: 12px;">
+                <img src="${popupImage}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 8px;" alt="Property" />
+              </div>
+              <div style="font-size: 18px; font-weight: 700; color: #1f2937; margin-bottom: 4px;">${price}</div>
+              <div style="font-size: 12px; color: #6b7280; margin-bottom: 8px;">Guide Price</div>
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 12px; color: #374151;">
+                <span style="font-weight: 500;">${listing.property_type?.value || 'Property'}</span>
+                <div style="width: 1px; height: 12px; background: #e5e7eb;"></div>
+                <div style="display: flex; align-items: center; gap: 2px;">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                  </svg>
+                  ${listing.number_of_bedrooms || 0}
+                </div>
+                <div style="width: 1px; height: 12px; background: #e5e7eb;"></div>
+                <div style="display: flex; align-items: center; gap: 2px;">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                    <line x1="8" y1="21" x2="16" y2="21"></line>
+                    <line x1="12" y1="17" x2="12" y2="21"></line>
+                  </svg>
+                  ${listing.number_of_bathrooms || 0}
+                </div>
+              </div>
+              <button onclick="window.open('${getRightmoveUrl(listing.listing_id)}', '_blank')" 
+                      style="width: 100%; background: #7c3aed; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: background 0.2s;"
+                      onmouseover="this.style.background='#6d28d9'" 
+                      onmouseout="this.style.background='#7c3aed'">
+                View on Rightmove
+              </button>
+            </div>
+          `
+          
+          
+          try {
+            // Create and open InfoWindow
+            const newInfoWindow = new (window as any).google.maps.InfoWindow({
+              content: infoWindowContent,
+              position: marker.getPosition(),
+              pixelOffset: new (window as any).google.maps.Size(0, -10),
+              maxWidth: 250
+            })
+            
+            console.log('DEBUG: InfoWindow created, opening...')
+            newInfoWindow.open(map, marker)
+            console.log('DEBUG: InfoWindow opened')
+            
+            // Check if it's visible after a short delay
+            setTimeout(() => {
+              const infoWindowElement = document.querySelector('.gm-style-iw')
+              if (infoWindowElement) {
+                console.log('DEBUG: InfoWindow element found in DOM')
+              } else {
+                console.log('DEBUG: InfoWindow element NOT found in DOM - this is the problem!')
+              }
+            }, 100)
+            
+            // Don't store in state to avoid interference
+            // setInfoWindow(newInfoWindow)
+          } catch (error) {
+            console.error('Error creating InfoWindow:', error)
+          }
         })
 
         return marker
@@ -892,48 +1064,16 @@ function MapView({
             }
   }, [map, listings, onPropertySelect])
 
-  // Update marker styles when selectedProperty changes
+  // Close info window when selectedProperty changes
   useEffect(() => {
-    if (!markers.length) return
-
-    markers.forEach(marker => {
-      const listing = listings.find(l => 
-        l.location?.coordinates?.latitude === marker.getPosition()?.lat() &&
-        l.location?.coordinates?.longitude === marker.getPosition()?.lng()
-      )
-      
-      if (listing) {
-        const isSelected = selectedProperty && selectedProperty.listing_id === listing.listing_id
-        
-        marker.setIcon({
-          url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="${isSelected ? '#7c3aed' : '#ec4899'}"/>
-              <circle cx="12" cy="9" r="2.5" fill="#ffffff"/>
-              ${isSelected ? '<circle cx="12" cy="9" r="4" fill="none" stroke="#7c3aed" stroke-width="2"/>' : ''}
-            </svg>
-          `),
-          scaledSize: new (window as any).google.maps.Size(40, 40),
-          anchor: new (window as any).google.maps.Point(20, 40)
-        })
-      }
-    })
-  }, [selectedProperty, markers, listings])
+    if (!selectedProperty && infoWindow) {
+      infoWindow.close()
+      setInfoWindow(null)
+    }
+  }, [selectedProperty, infoWindow])
 
   return (
     <div className="relative">
-      {/* Property Info Area - Always Visible */}
-      <div className="mb-4">
-        {selectedProperty ? (
-          <ListingCard listing={selectedProperty} />
-        ) : (
-          <div className="bg-black/20 border border-gray-500/30 rounded-xl p-8 text-center">
-            <div className="text-4xl mb-4 opacity-50">📍</div>
-            <p className="text-gray-400 text-lg">Select a property on the map to view details</p>
-          </div>
-        )}
-      </div>
-
       {/* Map Container */}
       <div 
         ref={mapRef} 

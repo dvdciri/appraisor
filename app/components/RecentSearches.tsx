@@ -86,7 +86,7 @@ export default function RecentSearches({ onShowAll }: RecentSearchesProps) {
             <div
               key={search.uprn}
               onClick={() => handleSearchClick(search.uprn)}
-              className="flex items-center justify-between p-2 rounded-lg bg-gray-800/30 hover:bg-purple-500/10 hover:border hover:border-purple-400/30 cursor-pointer transition-colors"
+              className="flex items-center justify-between p-2 rounded-lg bg-gray-800/30 hover:bg-purple-500/10 border border-transparent hover:border-purple-400/30 cursor-pointer transition-all duration-200 ease-in-out"
             >
               <div className="flex-1 min-w-0">
                 <p className="text-white text-sm font-medium truncate">

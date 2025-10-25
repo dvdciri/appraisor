@@ -935,14 +935,14 @@ export default function DashboardV1() {
         const response = await fetch(`/api/properties/${uprn}`)
         
         if (!response.ok) {
-          throw new Error(`Failed to fetch property data: ${response.statusText}`)
+          throw new Error('Failed to load property data')
         }
         
         const data = await response.json()
         setPropertyData(data)
       } catch (err) {
         console.error('Error fetching property data:', err)
-        setError(err instanceof Error ? err.message : 'Failed to load property data')
+        setError('Failed to load property data')
       } finally {
         setLoading(false)
       }
@@ -952,6 +952,27 @@ export default function DashboardV1() {
       fetchPropertyData()
     }
   }, [uprn])
+
+  // Retry function for error state
+  const retryFetchPropertyData = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const response = await fetch(`/api/properties/${uprn}`)
+      
+      if (!response.ok) {
+        throw new Error('Failed to load property data')
+      }
+      
+      const data = await response.json()
+      setPropertyData(data)
+    } catch (err) {
+      console.error('Error fetching property data:', err)
+      setError('Failed to load property data')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const hasSubsectionData = (subsectionId: string) => {
     switch(subsectionId) {
@@ -1181,11 +1202,21 @@ export default function DashboardV1() {
         {/* Main Content */}
         <main className="relative z-10 h-screen flex flex-col">
           {/* Scrollable Content Container - starts from top to scroll under header */}
-          <div className="flex-1 overflow-y-auto px-6 pt-32 pb-6 hide-scrollbar">
+          <div className="main-content-scrollable flex-1 overflow-y-auto px-6 pt-32 pb-6 hide-scrollbar">
             <div className="w-full max-w-7xl mx-auto">
               <div className="flex gap-8 w-full">
-                {/* Sidebar Navigation */}
-                <aside className="w-64 flex-shrink-0 flex-grow-0" style={{ width: '256px' }}>
+                {/* Fixed Sidebar Navigation */}
+                <aside 
+                  className="fixed w-64 flex-shrink-0 flex-grow-0 z-20" 
+                  style={{ width: '256px' }}
+                  onWheel={(e) => {
+                    // Forward scroll events to the main content area
+                    const mainContent = document.querySelector('.main-content-scrollable')
+                    if (mainContent) {
+                      mainContent.scrollTop += e.deltaY
+                    }
+                  }}
+                >
                   <div className="bg-black/20 backdrop-blur-xl border border-gray-500/30 rounded-2xl p-6 shadow-2xl">
                     <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-4">Sections</h2>
                     <nav className="space-y-2">
@@ -1218,6 +1249,9 @@ export default function DashboardV1() {
                   </div>
                 </aside>
 
+                {/* Spacer for fixed sidebar */}
+                <div className="w-64 flex-shrink-0 flex-grow-0" style={{ width: '256px' }}></div>
+
                 {/* Main Content */}
                 <div className="flex-1 min-w-0 w-full" style={{ width: 'calc(100% - 256px - 2rem)' }}>
                   <div className="bg-black/20 backdrop-blur-xl border border-gray-500/30 rounded-2xl shadow-2xl overflow-hidden w-full min-h-[600px]" style={{ width: '100%', minWidth: '600px' }}>
@@ -1225,8 +1259,8 @@ export default function DashboardV1() {
                   /* Loading Spinner */
                   <div className="p-8 w-full">
                     <div className="flex items-center gap-3 mb-8">
-                      <span className="text-2xl">🏠</span>
-                      <h1 className="text-2xl font-bold text-gray-100">Property Details</h1>
+                      <span className="text-2xl">{sections.find(s => s.id === activeSection)?.icon}</span>
+                      <h1 className="text-2xl font-bold text-gray-100">{sections.find(s => s.id === activeSection)?.label}</h1>
                     </div>
                     <div className="space-y-8">
                       {/* Property Overview Skeleton */}
@@ -1263,15 +1297,19 @@ export default function DashboardV1() {
                   /* Error State */
                   <div className="p-8 w-full">
                     <div className="flex items-center gap-3 mb-8">
-                      <span className="text-2xl">🏠</span>
-                      <h1 className="text-2xl font-bold text-gray-100">Property Details</h1>
+                      <span className="text-2xl">{sections.find(s => s.id === activeSection)?.icon}</span>
+                      <h1 className="text-2xl font-bold text-gray-100">{sections.find(s => s.id === activeSection)?.label}</h1>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <div className="text-2xl">⚠️</div>
-                      <div>
-                        <h2 className="text-xl font-semibold text-red-100 mb-1">Error Loading Property</h2>
-                        <p className="text-red-300">{error}</p>
-                      </div>
+                    <div className="flex flex-col items-center justify-center py-12">
+                      <div className="text-5xl mb-4">🏚️</div>
+                      <h2 className="text-xl font-semibold text-gray-100 mb-2">Error Loading Property</h2>
+                      <p className="text-gray-400 mb-6">Something went wrong while loading the property data.</p>
+                      <button
+                        onClick={retryFetchPropertyData}
+                        className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors duration-200"
+                      >
+                        Try Again
+                      </button>
                     </div>
                   </div>
                 ) : (
@@ -1627,6 +1665,7 @@ export default function DashboardV1() {
                               <NearbyListings 
                                 listings={getPropertyValue('nearby_listings') || { sale_listings: [], rental_listings: [] }}
                                 mainPropertyLocation={getPropertyValue('location')?.coordinates}
+                                mainPropertyPostcode={getPropertyValue('address.street_group_format.postcode')}
                               />
                             ) : (
                               <div className="text-center py-12">

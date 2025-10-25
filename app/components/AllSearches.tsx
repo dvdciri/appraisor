@@ -79,7 +79,7 @@ export default function AllSearches({ onBack }: AllSearchesProps) {
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
-            className="p-2 rounded-lg bg-gray-800/30 hover:bg-purple-500/10 hover:border hover:border-purple-400/30 transition-colors"
+            className="p-2 rounded-lg bg-gray-800/30 hover:bg-purple-500/10 border border-transparent hover:border-purple-400/30 transition-all duration-200 ease-in-out"
           >
             <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -123,7 +123,7 @@ export default function AllSearches({ onBack }: AllSearchesProps) {
             <div
               key={search.uprn}
               onClick={() => handleSearchClick(search.uprn)}
-              className="flex items-center justify-between p-3 rounded-lg bg-gray-800/30 hover:bg-purple-500/10 hover:border hover:border-purple-400/30 cursor-pointer transition-colors"
+              className="flex items-center justify-between p-3 rounded-lg bg-gray-800/30 hover:bg-purple-500/10 border border-transparent hover:border-purple-400/30 cursor-pointer transition-all duration-200 ease-in-out"
             >
               <div className="flex-1 min-w-0">
                 <p className="text-white text-sm font-medium truncate">
