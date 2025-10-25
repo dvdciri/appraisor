@@ -838,6 +838,7 @@ export default function DashboardV1() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isLargeScreen, setIsLargeScreen] = useState(false)
+  const [copyConfirmation, setCopyConfirmation] = useState<string | null>(null)
   const uprn = params.uprn as string
 
   // Helper functions to safely extract property data
@@ -857,6 +858,20 @@ export default function DashboardV1() {
     if (isNaN(meters)) return 'N/A'
     const squareFeet = Math.round(meters * 10.764)
     return `${meters.toLocaleString()}m² (${squareFeet.toLocaleString()}ft²)`
+  }
+
+  // Copy to clipboard function
+  const copyToClipboard = async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopyConfirmation(`${label} copied!`)
+      // Clear confirmation after 2 seconds
+      setTimeout(() => setCopyConfirmation(null), 2000)
+    } catch (err) {
+      console.error('Failed to copy to clipboard:', err)
+      setCopyConfirmation('Copy failed')
+      setTimeout(() => setCopyConfirmation(null), 2000)
+    }
   }
 
   // Helper function to get street view embed URL
@@ -1146,6 +1161,20 @@ export default function DashboardV1() {
           </div>
         </header>
 
+        {/* Copy Confirmation Toast */}
+        {copyConfirmation && (
+          <div className="fixed top-24 left-1/2 transform -translate-x-1/2 z-[1001] transition-opacity duration-300">
+            <div className="bg-green-500/90 backdrop-blur-sm text-white px-4 py-2 rounded-lg shadow-lg border border-green-400/30">
+              <div className="flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-sm font-medium">{copyConfirmation}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Main Content */}
         <main className="relative z-10 h-screen flex flex-col">
           {/* Scrollable Content Container - starts from top to scroll under header */}
@@ -1259,12 +1288,40 @@ export default function DashboardV1() {
                     {/* Address Section */}
                     <div className="mb-4">
                       <div className="text-left">
-                        <p className="text-gray-100 text-2xl font-semibold mb-2">
-                          {getPropertyValue('address.street_group_format.address_lines')}
-                        </p>
-                        <p className="text-gray-300 text-lg">
-                          {getPropertyValue('address.street_group_format.postcode')}
-                        </p>
+                        <div className="flex items-center gap-3 mb-2">
+                          <p className="text-gray-100 text-2xl font-semibold">
+                            {getPropertyValue('address.street_group_format.address_lines')}
+                          </p>
+                          <button
+                            onClick={() => copyToClipboard(
+                              getPropertyValue('address.street_group_format.address_lines'), 
+                              'Address'
+                            )}
+                            className="p-1 rounded hover:bg-gray-500/20 transition-colors"
+                            title="Copy address"
+                          >
+                            <svg className="w-4 h-4 text-gray-400 hover:text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                          </button>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <p className="text-gray-300 text-lg">
+                            {getPropertyValue('address.street_group_format.postcode')}
+                          </p>
+                          <button
+                            onClick={() => copyToClipboard(
+                              getPropertyValue('address.street_group_format.postcode'), 
+                              'Postcode'
+                            )}
+                            className="p-1 rounded hover:bg-gray-500/20 transition-colors"
+                            title="Copy postcode"
+                          >
+                            <svg className="w-4 h-4 text-gray-400 hover:text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                          </button>
+                        </div>
                       </div>
                     </div>
                     
