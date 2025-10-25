@@ -10,12 +10,13 @@ import GenericPanel from '../components/GenericPanel'
 import WorkingUserMenu from '../../components/WorkingUserMenu'
 import MarketAnalysis from '../components/MarketAnalysis'
 
-type Section = 'property-details' | 'market-analysis' | 'sold-comparables' | 'investment-calculator' | 'ai-refurbishment' | 'risk-assessment'
+type Section = 'property-details' | 'market-analysis' | 'sold-comparables' | 'investment-calculator' | 'ai-refurbishment' | 'risk-assessment' | 'nearby-listings'
 
 const sections = [
   { id: 'property-details' as Section, label: 'Property Details', icon: '🏠' },
   { id: 'risk-assessment' as Section, label: 'Risk Assessment', icon: '⚠️' },
   { id: 'market-analysis' as Section, label: 'Market Analysis', icon: '📊' },
+  { id: 'nearby-listings' as Section, label: 'Nearby Listings', icon: '📍' },
   { id: 'sold-comparables' as Section, label: 'Sold Comparables', icon: '🏘️' },
   { id: 'investment-calculator' as Section, label: 'Investment Calculator', icon: '💰' },
   { id: 'ai-refurbishment' as Section, label: 'AI Refurbishment Estimator', icon: '🤖' },
@@ -1613,6 +1614,19 @@ export default function DashboardV1() {
                               <h1 className="text-2xl font-bold text-gray-100">{sections.find(s => s.id === activeSection)?.label}</h1>
                             </div>
                             <MarketAnalysis marketStatistics={getPropertyValue('market_statistics')} />
+                          </div>
+                        ) : activeSection === 'nearby-listings' ? (
+                          /* Nearby Listings Section */
+                          <div className="w-full">
+                            <div className="flex items-center gap-3 mb-6">
+                              <span className="text-2xl">{sections.find(s => s.id === activeSection)?.icon}</span>
+                              <h1 className="text-2xl font-bold text-gray-100">{sections.find(s => s.id === activeSection)?.label}</h1>
+                            </div>
+                            <div className="text-center py-12">
+                              <div className="text-4xl mb-4 opacity-50">📍</div>
+                              <p className="text-gray-400">Nearby listings section is ready for implementation...</p>
+                              <p className="text-sm text-gray-500 mt-2">This section will show properties for sale and rent in the area</p>
+                            </div>
                           </div>
                         ) : (
                           /* Other Sections - Empty Layout */
