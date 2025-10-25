@@ -104,7 +104,8 @@ const DISTANCE_OPTIONS = [
   { label: 'Within 2 miles', value: 3218 },
 ]
 
-const BED_OPTIONS = ['Any', '1', '2', '3', '4', '5', '6+']
+  const BED_OPTIONS = ['Any', '1', '2', '3', '4', '5', '6+']
+  const BATH_OPTIONS = ['Any', '1', '2', '3', '4', '5+']
 
 const SORT_OPTIONS = [
   { label: 'Highest price', value: 'price-high' },
@@ -119,10 +120,8 @@ export default function NearbyListings({ listings }: NearbyListingsProps) {
   
   // Filter states
   const [distanceFilter, setDistanceFilter] = useState(DISTANCE_OPTIONS[0].value)
-  const [minPrice, setMinPrice] = useState('Any')
-  const [maxPrice, setMaxPrice] = useState('Any')
-  const [minBeds, setMinBeds] = useState('Any')
-  const [maxBeds, setMaxBeds] = useState('Any')
+  const [beds, setBeds] = useState('Any')
+  const [baths, setBaths] = useState('Any')
   const [propertyType, setPropertyType] = useState('All types')
   const [sortBy, setSortBy] = useState('newest')
 
@@ -171,24 +170,26 @@ export default function NearbyListings({ listings }: NearbyListingsProps) {
       filtered = filtered.filter(listing => listing.distance_in_metres <= distanceFilter)
     }
 
-    // Price filters
-    if (minPrice !== 'Any') {
-      const min = parsePrice(minPrice)
-      filtered = filtered.filter(listing => listing.price >= min)
-    }
-    if (maxPrice !== 'Any') {
-      const max = parsePrice(maxPrice)
-      filtered = filtered.filter(listing => listing.price <= max)
+    // Beds filter
+    if (beds !== 'Any') {
+      if (beds === '6+') {
+        filtered = filtered.filter(listing => listing.number_of_bedrooms >= 6)
+      } else {
+        const bedsValue = parseInt(beds)
+        filtered = filtered.filter(listing => listing.number_of_bedrooms === bedsValue)
+      }
     }
 
-    // Bed filters
-    if (minBeds !== 'Any') {
-      const min = parseInt(minBeds) || 0
-      filtered = filtered.filter(listing => listing.number_of_bedrooms >= min)
-    }
-    if (maxBeds !== 'Any') {
-      const max = parseInt(maxBeds) || 999
-      filtered = filtered.filter(listing => listing.number_of_bedrooms <= max)
+    // Baths filter
+    if (baths !== 'Any') {
+      if (baths === '5+') {
+        filtered = filtered.filter(listing => listing.number_of_bathrooms >= 5)
+      } else {
+        const bathsValue = parseInt(baths)
+        filtered = filtered.filter(listing => 
+          listing.number_of_bathrooms === bathsValue || listing.number_of_bathrooms === 0
+        )
+      }
     }
 
     // Property type filter
@@ -213,7 +214,7 @@ export default function NearbyListings({ listings }: NearbyListingsProps) {
     })
 
     return filtered
-  }, [availableListings, distanceFilter, minPrice, maxPrice, minBeds, maxBeds, propertyType, sortBy])
+  }, [availableListings, distanceFilter, beds, baths, propertyType, sortBy])
 
   const handleImageNavigation = (listingId: string, direction: 'prev' | 'next', totalImages: number) => {
     const currentIndex = currentImageIndex[listingId] || 0
@@ -368,7 +369,6 @@ export default function NearbyListings({ listings }: NearbyListingsProps) {
     )
   }
 
-  const priceOptions = activeTab === 'sale' ? SALE_PRICE_OPTIONS : RENT_PRICE_OPTIONS
 
   return (
     <div className="w-full">
@@ -398,18 +398,18 @@ export default function NearbyListings({ listings }: NearbyListingsProps) {
 
       {/* Filters and Sort */}
       <div className="bg-black/20 border border-gray-500/30 rounded-xl p-6 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
           {/* Distance Filter */}
           <div>
             <label className="block text-sm text-gray-400 mb-2">Distance</label>
             <div className="relative">
               <select
-                value={distanceFilter}
-                onChange={(e) => setDistanceFilter(Number(e.target.value))}
+                value={distanceFilter || ''}
+                onChange={(e) => setDistanceFilter(Number(e.target.value) || null)}
                 className="w-full bg-black/40 border border-gray-600 rounded-lg px-4 py-2 pr-12 text-gray-100 focus:outline-none focus:border-purple-400 appearance-none"
               >
                 {DISTANCE_OPTIONS.map(option => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
+                  <option key={option.value} value={option.value || ''}>{option.label}</option>
                 ))}
               </select>
               <div className="absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none">
@@ -420,17 +420,17 @@ export default function NearbyListings({ listings }: NearbyListingsProps) {
             </div>
           </div>
 
-          {/* Min Price */}
+          {/* Beds */}
           <div>
-            <label className="block text-sm text-gray-400 mb-2">Min Price</label>
+            <label className="block text-sm text-gray-400 mb-2">Beds</label>
             <div className="relative">
               <select
-                value={minPrice}
-                onChange={(e) => setMinPrice(e.target.value)}
+                value={beds}
+                onChange={(e) => setBeds(e.target.value)}
                 className="w-full bg-black/40 border border-gray-600 rounded-lg px-4 py-2 pr-12 text-gray-100 focus:outline-none focus:border-purple-400 appearance-none"
               >
-                {priceOptions.map(price => (
-                  <option key={price} value={price}>{price}</option>
+                {BED_OPTIONS.map(bed => (
+                  <option key={bed} value={bed}>{bed}</option>
                 ))}
               </select>
               <div className="absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none">
@@ -441,59 +441,17 @@ export default function NearbyListings({ listings }: NearbyListingsProps) {
             </div>
           </div>
 
-          {/* Max Price */}
+          {/* Baths */}
           <div>
-            <label className="block text-sm text-gray-400 mb-2">Max Price</label>
+            <label className="block text-sm text-gray-400 mb-2">Baths</label>
             <div className="relative">
               <select
-                value={maxPrice}
-                onChange={(e) => setMaxPrice(e.target.value)}
+                value={baths}
+                onChange={(e) => setBaths(e.target.value)}
                 className="w-full bg-black/40 border border-gray-600 rounded-lg px-4 py-2 pr-12 text-gray-100 focus:outline-none focus:border-purple-400 appearance-none"
               >
-                {priceOptions.map(price => (
-                  <option key={price} value={price}>{price}</option>
-                ))}
-              </select>
-              <div className="absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none">
-                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          {/* Min Beds */}
-          <div>
-            <label className="block text-sm text-gray-400 mb-2">Min Beds</label>
-            <div className="relative">
-              <select
-                value={minBeds}
-                onChange={(e) => setMinBeds(e.target.value)}
-                className="w-full bg-black/40 border border-gray-600 rounded-lg px-4 py-2 pr-12 text-gray-100 focus:outline-none focus:border-purple-400 appearance-none"
-              >
-                {BED_OPTIONS.map(beds => (
-                  <option key={beds} value={beds}>{beds}</option>
-                ))}
-              </select>
-              <div className="absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none">
-                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          {/* Max Beds */}
-          <div>
-            <label className="block text-sm text-gray-400 mb-2">Max Beds</label>
-            <div className="relative">
-              <select
-                value={maxBeds}
-                onChange={(e) => setMaxBeds(e.target.value)}
-                className="w-full bg-black/40 border border-gray-600 rounded-lg px-4 py-2 pr-12 text-gray-100 focus:outline-none focus:border-purple-400 appearance-none"
-              >
-                {BED_OPTIONS.map(beds => (
-                  <option key={beds} value={beds}>{beds}</option>
+                {BATH_OPTIONS.map(bath => (
+                  <option key={bath} value={bath}>{bath}</option>
                 ))}
               </select>
               <div className="absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none">
