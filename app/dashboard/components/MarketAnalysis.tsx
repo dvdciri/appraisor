@@ -132,12 +132,6 @@ const MarketAnalysis = ({ marketStatistics }: MarketAnalysisProps) => {
   if (!marketStatistics) {
     return (
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-100">Market Analysis</h2>
-            <p className="text-sm text-gray-400">Loading market data...</p>
-          </div>
-        </div>
         <div className="bg-gray-800/20 rounded-lg p-8 border border-gray-600/20 text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-bg-subtle border-t-accent mx-auto mb-4"></div>
           <h3 className="text-lg font-semibold text-gray-200 mb-2">Loading Market Data</h3>
@@ -206,12 +200,6 @@ const MarketAnalysis = ({ marketStatistics }: MarketAnalysisProps) => {
   if (!hasValidData) {
     return (
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-100">Market Analysis</h2>
-            <p className="text-sm text-gray-400">Market data not available</p>
-          </div>
-        </div>
         <div className="bg-gray-800/20 rounded-lg p-8 border border-gray-600/20 text-center">
           <div className="text-4xl mb-4 opacity-50">📊</div>
           <h3 className="text-lg font-semibold text-gray-200 mb-2">No Market Data Available</h3>
@@ -225,10 +213,9 @@ const MarketAnalysis = ({ marketStatistics }: MarketAnalysisProps) => {
 
   return (
     <div className="space-y-6">
-      {/* Header with Property Type Filter */}
+      {/* Property Type Filter */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-xl font-semibold text-gray-100">Market Analysis</h2>
           <p className="text-sm text-gray-400">
             {selectedPropertyType === 'all' 
               ? 'All property types' 
