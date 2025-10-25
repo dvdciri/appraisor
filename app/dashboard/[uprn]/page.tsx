@@ -9,6 +9,7 @@ import ComparablesAnalysis, { renderTransactionDetails } from '../components/Com
 import GenericPanel from '../components/GenericPanel'
 import WorkingUserMenu from '../../components/WorkingUserMenu'
 import MarketAnalysis from '../components/MarketAnalysis'
+import NearbyListings from '../components/NearbyListings'
 
 type Section = 'property-details' | 'market-analysis' | 'sold-comparables' | 'investment-calculator' | 'ai-refurbishment' | 'risk-assessment' | 'nearby-listings'
 
@@ -1622,11 +1623,14 @@ export default function DashboardV1() {
                               <span className="text-2xl">{sections.find(s => s.id === activeSection)?.icon}</span>
                               <h1 className="text-2xl font-bold text-gray-100">{sections.find(s => s.id === activeSection)?.label}</h1>
                             </div>
-                            <div className="text-center py-12">
-                              <div className="text-4xl mb-4 opacity-50">📍</div>
-                              <p className="text-gray-400">Nearby listings section is ready for implementation...</p>
-                              <p className="text-sm text-gray-500 mt-2">This section will show properties for sale and rent in the area</p>
-                            </div>
+                            {propertyData ? (
+                              <NearbyListings listings={getPropertyValue('nearby_listings') || { sale_listings: [], rental_listings: [] }} />
+                            ) : (
+                              <div className="text-center py-12">
+                                <div className="text-4xl mb-4 opacity-50">📍</div>
+                                <p className="text-gray-400">Loading nearby listings...</p>
+                              </div>
+                            )}
                           </div>
                         ) : (
                           /* Other Sections - Empty Layout */
