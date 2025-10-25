@@ -1624,7 +1624,10 @@ export default function DashboardV1() {
                               <h1 className="text-2xl font-bold text-gray-100">{sections.find(s => s.id === activeSection)?.label}</h1>
                             </div>
                             {propertyData ? (
-                              <NearbyListings listings={getPropertyValue('nearby_listings') || { sale_listings: [], rental_listings: [] }} />
+                              <NearbyListings 
+                                listings={getPropertyValue('nearby_listings') || { sale_listings: [], rental_listings: [] }}
+                                mainPropertyLocation={getPropertyValue('location')?.coordinates}
+                              />
                             ) : (
                               <div className="text-center py-12">
                                 <div className="text-4xl mb-4 opacity-50">📍</div>

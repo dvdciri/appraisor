@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import Image from 'next/image'
 
 interface Listing {
@@ -10,6 +10,12 @@ interface Listing {
       thoroughfare: string
       post_town: string
       postcode: string
+    }
+  }
+  location: {
+    coordinates: {
+      latitude: number
+      longitude: number
     }
   }
   property_type: {
@@ -35,6 +41,10 @@ interface NearbyListingsProps {
   listings: {
     sale_listings: Listing[]
     rental_listings: Listing[]
+  }
+  mainPropertyLocation?: {
+    latitude: number
+    longitude: number
   }
 }
 
@@ -114,9 +124,63 @@ const SORT_OPTIONS = [
   { label: 'Oldest listed', value: 'oldest' },
 ]
 
-export default function NearbyListings({ listings }: NearbyListingsProps) {
+// Helper functions
+const metersToMiles = (meters: number): string => {
+  const miles = meters / 1609.34
+  return miles.toFixed(2)
+}
+
+const formatPrice = (price: number, type: 'sale' | 'rent'): string => {
+  if (type === 'rent') {
+    return `£${price.toLocaleString()} pcm`
+  }
+  return `£${price.toLocaleString()}`
+}
+
+const formatArea = (sqm: number): string => {
+  const sqft = Math.round(sqm * 10.764)
+  return `${sqm}m² (${sqft.toLocaleString()} sq ft)`
+}
+
+const getRightmoveUrl = (listingId: string): string => {
+  const numericId = listingId.replace(/^r/, '')
+  return `https://www.rightmove.co.uk/properties/${numericId}`
+}
+
+// Helper function to calculate approximate coordinates for nearby listings
+const calculateNearbyCoordinates = (
+  mainLat: number, 
+  mainLng: number, 
+  distanceInMeters: number,
+  listingId: string
+): { latitude: number; longitude: number } => {
+  // Convert meters to degrees (rough approximation)
+  // 1 degree latitude ≈ 111,000 meters
+  // 1 degree longitude ≈ 111,000 * cos(latitude) meters
+  
+  // Use listing ID to create deterministic but varied positions
+  const hash = listingId.split('').reduce((a, b) => {
+    a = ((a << 5) - a) + b.charCodeAt(0)
+    return a & a
+  }, 0)
+  
+  const angle = (Math.abs(hash) % 360) * (Math.PI / 180) // Convert to radians
+  const distanceInDegrees = distanceInMeters / 111000
+  
+  const latOffset = distanceInDegrees * Math.cos(angle) * 0.5
+  const lngOffset = distanceInDegrees * Math.sin(angle) * 0.5 / Math.cos(mainLat * Math.PI / 180)
+  
+  return {
+    latitude: mainLat + latOffset,
+    longitude: mainLng + lngOffset
+  }
+}
+
+export default function NearbyListings({ listings, mainPropertyLocation }: NearbyListingsProps) {
   const [activeTab, setActiveTab] = useState<'sale' | 'rent'>('sale')
   const [currentImageIndex, setCurrentImageIndex] = useState<Record<string, number>>({})
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
+  const [selectedProperty, setSelectedProperty] = useState<Listing | null>(null)
   
   // Filter states
   const [distanceFilter, setDistanceFilter] = useState(DISTANCE_OPTIONS[0].value)
@@ -125,8 +189,24 @@ export default function NearbyListings({ listings }: NearbyListingsProps) {
   const [propertyType, setPropertyType] = useState('All types')
   const [sortBy, setSortBy] = useState('newest')
 
-  // Get available property types
-  const availableListings = activeTab === 'sale' ? listings.sale_listings : listings.rental_listings
+  // Get available property types and enhance with coordinates
+  const availableListings = useMemo(() => {
+    const baseListings = activeTab === 'sale' ? listings.sale_listings : listings.rental_listings
+    
+    if (!mainPropertyLocation) return baseListings
+    
+    return baseListings.map(listing => ({
+      ...listing,
+      location: {
+        coordinates: calculateNearbyCoordinates(
+          mainPropertyLocation.latitude,
+          mainPropertyLocation.longitude,
+          listing.distance_in_metres,
+          listing.listing_id
+        )
+      }
+    }))
+  }, [listings, activeTab, mainPropertyLocation])
   const uniquePropertyTypes = useMemo(() => {
     const types = new Set(availableListings.map(listing => listing.property_type?.value))
     return Array.from(types).filter(Boolean).sort()
@@ -134,28 +214,6 @@ export default function NearbyListings({ listings }: NearbyListingsProps) {
 
   const PROPERTY_TYPE_OPTIONS = ['All types', ...uniquePropertyTypes]
 
-  // Helper functions
-  const metersToMiles = (meters: number): string => {
-    const miles = meters / 1609.34
-    return miles.toFixed(2)
-  }
-
-  const formatPrice = (price: number, type: 'sale' | 'rent'): string => {
-    if (type === 'rent') {
-      return `£${price.toLocaleString()} pcm`
-    }
-    return `£${price.toLocaleString()}`
-  }
-
-  const formatArea = (sqm: number): string => {
-    const sqft = Math.round(sqm * 10.764)
-    return `${sqm}m² (${sqft.toLocaleString()} sq ft)`
-  }
-
-  const getRightmoveUrl = (listingId: string): string => {
-    const numericId = listingId.replace(/^r/, '')
-    return `https://www.rightmove.co.uk/properties/${numericId}`
-  }
 
   const parsePrice = (priceStr: string): number => {
     return parseInt(priceStr.replace(/[£,]/g, '')) || 0
@@ -484,30 +542,60 @@ export default function NearbyListings({ listings }: NearbyListingsProps) {
           </div>
         </div>
 
-        {/* Sort */}
+        {/* Sort and View Toggle */}
         <div className="flex items-center justify-between">
           <div className="text-gray-400 text-sm">
             Showing {filteredAndSortedListings.length} {filteredAndSortedListings.length === 1 ? 'property' : 'properties'}
           </div>
-          <div className="flex items-center gap-3">
-            <label className="text-sm text-gray-400">Sort by:</label>
-            <div className="relative">
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="bg-black/40 border border-gray-600 rounded-lg px-4 py-2 pr-12 text-gray-100 focus:outline-none focus:border-purple-400 appearance-none"
-              >
-              {SORT_OPTIONS.map(option => (
-                <option key={option.value} value={option.value}>{option.label}</option>
-              ))}
-              </select>
-              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
+          <div className="flex items-center gap-4">
+            
+            {/* Sort */}
+            <div className="flex items-center gap-3">
+              <label className="text-sm text-gray-400">Sort by:</label>
+              <div className="relative">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="bg-black/40 border border-gray-600 rounded-lg px-4 py-2 pr-12 text-gray-100 focus:outline-none focus:border-purple-400 appearance-none"
+                >
+                {SORT_OPTIONS.map(option => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* View Toggle - Compact */}
+      <div className="flex items-center my-4">
+        <div className="bg-black/20 border border-gray-600 rounded-lg p-0.5 flex">
+          <button
+            onClick={() => setViewMode('list')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+              viewMode === 'list'
+                ? 'bg-purple-600 text-white'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            List view
+          </button>
+          <button
+            onClick={() => setViewMode('map')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+              viewMode === 'map'
+                ? 'bg-purple-600 text-white'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            Map view
+          </button>
         </div>
       </div>
 
@@ -519,12 +607,339 @@ export default function NearbyListings({ listings }: NearbyListingsProps) {
             <p className="text-gray-400">No properties found matching your filters</p>
             <p className="text-sm text-gray-500 mt-2">Try adjusting your search criteria</p>
           </div>
-        ) : (
+        ) : viewMode === 'list' ? (
           filteredAndSortedListings.map((listing) => (
             <ListingCard key={listing.listing_id} listing={listing} />
           ))
+        ) : (
+          <MapView 
+            listings={filteredAndSortedListings} 
+            selectedProperty={selectedProperty}
+            onPropertySelect={setSelectedProperty}
+            activeTab={activeTab}
+            mainPropertyLocation={mainPropertyLocation}
+            ListingCard={ListingCard}
+          />
         )}
       </div>
+    </div>
+  )
+}
+
+// MapView Component
+function MapView({ 
+  listings, 
+  selectedProperty, 
+  onPropertySelect,
+  activeTab,
+  mainPropertyLocation,
+  ListingCard
+}: { 
+  listings: Listing[]
+  selectedProperty: Listing | null
+  onPropertySelect: (property: Listing | null) => void
+  activeTab: 'sale' | 'rent'
+  mainPropertyLocation?: { latitude: number; longitude: number }
+  ListingCard: React.ComponentType<{ listing: Listing }>
+}) {
+  const mapRef = useRef<HTMLDivElement>(null)
+  const [map, setMap] = useState<any>(null)
+  const [markers, setMarkers] = useState<any[]>([])
+  const [radiusCircle, setRadiusCircle] = useState<any>(null)
+  const [selectedMarker, setSelectedMarker] = useState<any>(null)
+
+  // Initialize map
+  useEffect(() => {
+    if (!mapRef.current || map) return
+
+    const initMap = () => {
+      // Find first listing with valid coordinates
+      const listingWithCoords = listings.find(listing => 
+        listing.location?.coordinates?.latitude && listing.location?.coordinates?.longitude
+      )
+      
+      const center = listingWithCoords
+        ? { lat: listingWithCoords.location.coordinates.latitude, lng: listingWithCoords.location.coordinates.longitude }
+        : { lat: 51.5074, lng: -0.1278 } // Default to London
+
+      const newMap = new (window as any).google.maps.Map(mapRef.current!, {
+        zoom: 13,
+        center,
+        styles: [
+          {
+            featureType: 'all',
+            elementType: 'geometry',
+            stylers: [{ color: '#1e293b' }]
+          },
+          {
+            featureType: 'all',
+            elementType: 'labels.text.stroke',
+            stylers: [{ color: '#000000', weight: 2 }]
+          },
+          {
+            featureType: 'all',
+            elementType: 'labels.text.fill',
+            stylers: [{ color: '#ffffff' }]
+          },
+          {
+            featureType: 'administrative.locality',
+            elementType: 'labels.text.fill',
+            stylers: [{ color: '#fbbf24' }]
+          },
+          {
+            featureType: 'poi',
+            elementType: 'labels.text.fill',
+            stylers: [{ color: '#fbbf24' }]
+          },
+          {
+            featureType: 'poi.park',
+            elementType: 'geometry',
+            stylers: [{ color: '#1f2937' }]
+          },
+          {
+            featureType: 'poi.park',
+            elementType: 'labels.text.fill',
+            stylers: [{ color: '#10b981' }]
+          },
+          {
+            featureType: 'road',
+            elementType: 'geometry',
+            stylers: [{ color: '#374151' }]
+          },
+          {
+            featureType: 'road',
+            elementType: 'geometry.stroke',
+            stylers: [{ color: '#1f2937' }]
+          },
+          {
+            featureType: 'road',
+            elementType: 'labels.text.fill',
+            stylers: [{ color: '#d1d5db' }]
+          },
+          {
+            featureType: 'road.highway',
+            elementType: 'geometry',
+            stylers: [{ color: '#4b5563' }]
+          },
+          {
+            featureType: 'road.highway',
+            elementType: 'geometry.stroke',
+            stylers: [{ color: '#1f2937' }]
+          },
+          {
+            featureType: 'road.highway',
+            elementType: 'labels.text.fill',
+            stylers: [{ color: '#fbbf24' }]
+          },
+          {
+            featureType: 'transit',
+            elementType: 'geometry',
+            stylers: [{ color: '#374151' }]
+          },
+          {
+            featureType: 'transit.station',
+            elementType: 'labels.text.fill',
+            stylers: [{ color: '#fbbf24' }]
+          },
+          {
+            featureType: 'water',
+            elementType: 'geometry',
+            stylers: [{ color: '#1e40af' }]
+          },
+          {
+            featureType: 'water',
+            elementType: 'labels.text.fill',
+            stylers: [{ color: '#60a5fa' }]
+          },
+          {
+            featureType: 'water',
+            elementType: 'labels.text.stroke',
+            stylers: [{ color: '#000000' }]
+          }
+        ]
+      })
+
+      setMap(newMap)
+    }
+
+    // Load Google Maps script if not already loaded
+    if (typeof (window as any).google === 'undefined') {
+      const script = document.createElement('script')
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`
+      script.async = true
+      script.defer = true
+      script.onload = initMap
+      document.head.appendChild(script)
+    } else {
+      initMap()
+    }
+  }, [listings, map])
+
+  // Update markers and radius circle when listings change
+  useEffect(() => {
+    if (!map || !listings.length) return
+
+    // Clear existing markers
+    markers.forEach(marker => marker.setMap(null))
+    
+    // Clear existing radius circle
+    if (radiusCircle) {
+      radiusCircle.setMap(null)
+    }
+    
+    // Clear selected marker
+    setSelectedMarker(null)
+
+    const newMarkers = listings
+      .filter(listing => listing.location?.coordinates?.latitude && listing.location?.coordinates?.longitude)
+      .map(listing => {
+        const isSelected = selectedProperty && selectedProperty.listing_id === listing.listing_id
+        
+        const marker = new (window as any).google.maps.Marker({
+          position: { lat: listing.location.coordinates.latitude, lng: listing.location.coordinates.longitude },
+          map,
+          title: `${listing.address.royal_mail_format.thoroughfare}, ${listing.address.royal_mail_format.post_town}`,
+          icon: {
+            url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="${isSelected ? '#7c3aed' : '#ec4899'}"/>
+                <circle cx="12" cy="9" r="2.5" fill="#ffffff"/>
+                ${isSelected ? '<circle cx="12" cy="9" r="4" fill="none" stroke="#7c3aed" stroke-width="2"/>' : ''}
+              </svg>
+            `),
+            scaledSize: new (window as any).google.maps.Size(40, 40),
+            anchor: new (window as any).google.maps.Point(20, 40)
+          }
+        })
+
+        marker.addListener('click', () => {
+          onPropertySelect(listing)
+          setSelectedMarker(marker)
+        })
+
+        return marker
+      })
+
+    setMarkers(newMarkers)
+
+            // Create radius circle around the main property
+            if (mainPropertyLocation && listings.length > 0) {
+              const maxDistance = Math.max(...listings.map(l => l.distance_in_metres))
+              
+              const circle = new (window as any).google.maps.Circle({
+                strokeColor: '#ec4899',
+                strokeOpacity: 0.8,
+                strokeWeight: 2,
+                fillColor: '#ec4899',
+                fillOpacity: 0.1,
+                map: map,
+                center: {
+                  lat: mainPropertyLocation.latitude,
+                  lng: mainPropertyLocation.longitude
+                },
+                radius: maxDistance
+              })
+              
+              setRadiusCircle(circle)
+            }
+
+            // Fit map to show all markers with padding around the radius circle
+            if (newMarkers.length > 0) {
+              const bounds = new (window as any).google.maps.LatLngBounds()
+              
+              // Always include the main property location in bounds
+              if (mainPropertyLocation) {
+                bounds.extend(new (window as any).google.maps.LatLng(mainPropertyLocation.latitude, mainPropertyLocation.longitude))
+              }
+              
+              // Add all marker positions
+              newMarkers.forEach(marker => bounds.extend(marker.getPosition()!))
+              
+              // For small areas, ensure we show the full radius circle
+              const maxDistance = Math.max(...listings.map(l => l.distance_in_metres))
+              if (maxDistance < 1000 && mainPropertyLocation) {
+                // Convert meters to degrees (rough approximation)
+                const radiusInDegrees = maxDistance / 111000
+                
+                // Extend bounds to include the full radius circle
+                bounds.extend(new (window as any).google.maps.LatLng(
+                  mainPropertyLocation.latitude + radiusInDegrees,
+                  mainPropertyLocation.longitude + radiusInDegrees
+                ))
+                bounds.extend(new (window as any).google.maps.LatLng(
+                  mainPropertyLocation.latitude - radiusInDegrees,
+                  mainPropertyLocation.longitude - radiusInDegrees
+                ))
+              }
+              
+              // Add padding to ensure the radius circle is fully visible
+              const padding = 0.5 // 50% padding
+              const ne = bounds.getNorthEast()
+              const sw = bounds.getSouthWest()
+              const latDiff = ne.lat() - sw.lat()
+              const lngDiff = ne.lng() - sw.lng()
+              
+              bounds.extend({
+                lat: ne.lat() + (latDiff * padding),
+                lng: ne.lng() + (lngDiff * padding)
+              })
+              bounds.extend({
+                lat: sw.lat() - (latDiff * padding),
+                lng: sw.lng() - (lngDiff * padding)
+              })
+              
+              map.fitBounds(bounds)
+            }
+  }, [map, listings, onPropertySelect])
+
+  // Update marker styles when selectedProperty changes
+  useEffect(() => {
+    if (!markers.length) return
+
+    markers.forEach(marker => {
+      const listing = listings.find(l => 
+        l.location?.coordinates?.latitude === marker.getPosition()?.lat() &&
+        l.location?.coordinates?.longitude === marker.getPosition()?.lng()
+      )
+      
+      if (listing) {
+        const isSelected = selectedProperty && selectedProperty.listing_id === listing.listing_id
+        
+        marker.setIcon({
+          url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="${isSelected ? '#7c3aed' : '#ec4899'}"/>
+              <circle cx="12" cy="9" r="2.5" fill="#ffffff"/>
+              ${isSelected ? '<circle cx="12" cy="9" r="4" fill="none" stroke="#7c3aed" stroke-width="2"/>' : ''}
+            </svg>
+          `),
+          scaledSize: new (window as any).google.maps.Size(40, 40),
+          anchor: new (window as any).google.maps.Point(20, 40)
+        })
+      }
+    })
+  }, [selectedProperty, markers, listings])
+
+  return (
+    <div className="relative">
+      {/* Property Info Area - Always Visible */}
+      <div className="mb-4">
+        {selectedProperty ? (
+          <ListingCard listing={selectedProperty} />
+        ) : (
+          <div className="bg-black/20 border border-gray-500/30 rounded-xl p-8 text-center">
+            <div className="text-4xl mb-4 opacity-50">📍</div>
+            <p className="text-gray-400 text-lg">Select a property on the map to view details</p>
+          </div>
+        )}
+      </div>
+
+      {/* Map Container */}
+      <div 
+        ref={mapRef} 
+        className="w-full aspect-square rounded-xl overflow-hidden border border-gray-500/30"
+        style={{ minHeight: '500px' }}
+      />
     </div>
   )
 }
