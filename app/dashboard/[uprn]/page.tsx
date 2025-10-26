@@ -10,6 +10,7 @@ import GenericPanel from '../components/GenericPanel'
 import WorkingUserMenu from '../../components/WorkingUserMenu'
 import MarketAnalysis from '../components/MarketAnalysis'
 import NearbyListings from '../components/NearbyListings'
+import StreetViewImage from '../components/StreetViewImage'
 
 type Section = 'property-details' | 'market-analysis' | 'sold-comparables' | 'investment-calculator' | 'ai-refurbishment' | 'risk-assessment' | 'nearby-listings'
 
@@ -18,7 +19,7 @@ const sections = [
   { id: 'risk-assessment' as Section, label: 'Risk Assessment', icon: '⚠️' },
   { id: 'market-analysis' as Section, label: 'Market Analysis', icon: '📊' },
   { id: 'nearby-listings' as Section, label: 'Nearby Listings', icon: '📍' },
-  { id: 'sold-comparables' as Section, label: 'Sold Comparables', icon: '🏘️' },
+  { id: 'sold-comparables' as Section, label: 'Property Valuation', icon: '🏘️' },
   { id: 'investment-calculator' as Section, label: 'Investment Calculator', icon: '💰' },
   { id: 'ai-refurbishment' as Section, label: 'AI Refurbishment Estimator', icon: '🤖' },
 ]
@@ -835,13 +836,18 @@ export default function DashboardV1() {
   const [activeSection, setActiveSection] = useState<Section>('property-details')
   const [rightPanelOpen, setRightPanelOpen] = useState(false)
   const [selectedSubsection, setSelectedSubsection] = useState<string | null>(null)
-  const [comparablesPanelOpen, setComparablesPanelOpen] = useState(false)
   const [selectedTransaction, setSelectedTransaction] = useState<any>(null)
+  const [selectedComparablesPanelOpen, setSelectedComparablesPanelOpen] = useState(false)
+  const [panelNavigation, setPanelNavigation] = useState<'none' | 'selected' | 'details'>('none')
+  const [navigationSource, setNavigationSource] = useState<'main' | 'selected'>('main')
+  const [selectedComparablesCount, setSelectedComparablesCount] = useState(0)
+  const [selectedComparablesTransactions, setSelectedComparablesTransactions] = useState<any[]>([])
   const [propertyData, setPropertyData] = useState<PropertyData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isLargeScreen, setIsLargeScreen] = useState(false)
   const [copyConfirmation, setCopyConfirmation] = useState<string | null>(null)
+  const [showHowItWorksDialog, setShowHowItWorksDialog] = useState(false)
   const uprn = params.uprn as string
 
   // Helper functions to safely extract property data
@@ -903,7 +909,8 @@ export default function DashboardV1() {
         if (newIsLargeScreen !== prevIsLargeScreen) {
           // When changing screen size, close the floating panels
           setRightPanelOpen(false)
-          setComparablesPanelOpen(false)
+          setPanelNavigation('none')
+          setNavigationSource('main')
           setSelectedSubsection(null)
           setSelectedTransaction(null)
           return newIsLargeScreen
@@ -1040,12 +1047,46 @@ export default function DashboardV1() {
 
   const handleTransactionSelect = (transaction: any) => {
     setSelectedTransaction(transaction)
-    setComparablesPanelOpen(true)
+    if (panelNavigation === 'selected') {
+      // Coming from selected comparables panel, show details on top
+      setNavigationSource('selected')
+      setPanelNavigation('details')
+    } else {
+      // Coming from main screen, show details panel
+      setNavigationSource('main')
+      setPanelNavigation('details')
+    }
   }
 
   const handleCloseComparablesPanel = () => {
-    setComparablesPanelOpen(false)
+    setPanelNavigation('none')
     setSelectedTransaction(null)
+  }
+
+  const handleBackToSelectedComparables = () => {
+    if (navigationSource === 'selected') {
+      // Go back to selected comparables panel
+      setPanelNavigation('selected')
+      setSelectedTransaction(null)
+    } else {
+      // Go back to main screen (close all panels)
+      setPanelNavigation('none')
+      setSelectedTransaction(null)
+    }
+  }
+
+  const handleOpenSelectedComparables = () => {
+    setNavigationSource('main')
+    setPanelNavigation('selected')
+  }
+
+  const handleRemoveComparable = (transactionId: string) => {
+    // Remove from selected transactions list
+    setSelectedComparablesTransactions(prev => 
+      prev.filter(transaction => transaction.street_group_property_id !== transactionId)
+    )
+    // Update count
+    setSelectedComparablesCount(prev => prev - 1)
   }
 
   // Show loading while checking authentication
@@ -1231,7 +1272,8 @@ export default function DashboardV1() {
                               setSelectedSubsection(null)
                             }
                             if (section.id !== 'sold-comparables') {
-                              setComparablesPanelOpen(false)
+                              setPanelNavigation('none')
+                              setNavigationSource('main')
                               setSelectedTransaction(null)
                             }
                           }}
@@ -1627,9 +1669,17 @@ export default function DashboardV1() {
                         ) : activeSection === 'sold-comparables' ? (
                           /* Sold Comparables Section */
                           <div className="w-full">
-                            <div className="flex items-center gap-3 mb-6">
-                              <span className="text-2xl">{sections.find(s => s.id === activeSection)?.icon}</span>
-                              <h1 className="text-2xl font-bold text-gray-100">{sections.find(s => s.id === activeSection)?.label}</h1>
+                            <div className="flex items-center justify-between mb-6">
+                              <div className="flex items-center gap-3">
+                                <span className="text-2xl">{sections.find(s => s.id === activeSection)?.icon}</span>
+                                <h1 className="text-2xl font-bold text-gray-100">{sections.find(s => s.id === activeSection)?.label}</h1>
+                              </div>
+                              <button
+                                onClick={() => setShowHowItWorksDialog(true)}
+                                className="text-purple-400 hover:text-purple-300 text-sm underline transition-colors"
+                              >
+                                How does it work?
+                              </button>
                             </div>
                             {propertyData ? (
                               <ComparablesAnalysis
@@ -1637,7 +1687,20 @@ export default function DashboardV1() {
                                 nearbyTransactions={getPropertyValue('nearby_completed_transactions') || []}
                                 subjectPropertySqm={parseFloat(getPropertyValue('internal_area_square_metres', '0'))}
                                 subjectPropertyStreet={getPropertyValue('address.simplified_format.street', '')}
+                                subjectPropertyData={{
+                                  address: getPropertyValue('address.street_group_format.address_lines'),
+                                  postcode: getPropertyValue('address.street_group_format.postcode'),
+                                  propertyType: getPropertyValue('property_type.value'),
+                                  bedrooms: parseInt(getPropertyValue('number_of_bedrooms.value', '0')),
+                                  bathrooms: parseInt(getPropertyValue('number_of_bathrooms.value', '0')),
+                                  internalArea: parseFloat(getPropertyValue('internal_area_square_metres', '0'))
+                                }}
                                 onTransactionSelect={handleTransactionSelect}
+                                onSelectedCountChange={setSelectedComparablesCount}
+                                onSelectedPanelOpen={handleOpenSelectedComparables}
+                                onSelectedTransactionsChange={setSelectedComparablesTransactions}
+                                onRemoveComparable={handleRemoveComparable}
+                                selectedPanelOpen={selectedComparablesPanelOpen}
                               />
                             ) : (
                               <div className="text-center py-8 text-gray-400">
@@ -1727,15 +1790,153 @@ export default function DashboardV1() {
             </div>
         </GenericPanel>
 
-        {/* Generic Right Panel for Comparables */}
+        {/* Selected Comparables Panel */}
         <GenericPanel
-            isOpen={activeSection === 'sold-comparables' && comparablesPanelOpen && !!selectedTransaction}
-            onClose={handleCloseComparablesPanel}
-            title="Transaction Details"
-            isLargeScreen={isLargeScreen}
+          isOpen={activeSection === 'sold-comparables' && panelNavigation === 'selected'}
+          onClose={() => setPanelNavigation('none')}
+          title={`Selected Comparables (${selectedComparablesCount})`}
+          isLargeScreen={isLargeScreen}
+          zIndex={1000}
+        >
+          <div className="space-y-4">
+            {selectedComparablesTransactions.length > 0 ? (
+              selectedComparablesTransactions.map((transaction) => (
+                <div key={transaction.street_group_property_id} className="relative">
+                  <div 
+                    onClick={() => handleTransactionSelect(transaction)}
+                    className="bg-black/20 border border-gray-500/30 rounded-lg p-4 transition-all duration-200 cursor-pointer hover:bg-gray-700/40 hover:border-gray-500/50"
+                  >
+                    <div className="flex gap-4">
+                      {/* Street View Image */}
+                      <div className="flex-shrink-0 relative">
+                        <StreetViewImage
+                          address={transaction.address?.street_group_format?.address_lines || ''}
+                          postcode={transaction.address?.street_group_format?.postcode || ''}
+                          latitude={transaction.location?.coordinates?.latitude}
+                          longitude={transaction.location?.coordinates?.longitude}
+                          className="w-20 h-20 object-cover rounded-lg"
+                        />
+                      </div>
+                      
+                      {/* Property Details */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex-1">
+                            <h4 className="text-sm font-medium text-gray-100 mb-1">
+                              {transaction.address?.street_group_format?.address_lines || 'Address not available'}
+                            </h4>
+                            <p className="text-xs text-gray-400">
+                              {transaction.address?.street_group_format?.postcode || 'Postcode not available'}
+                            </p>
+                          </div>
+                          <div className="text-right ml-4">
+                            <div className="text-lg font-bold text-white">
+                              {new Intl.NumberFormat('en-GB', {
+                                style: 'currency',
+                                currency: 'GBP',
+                                minimumFractionDigits: 0,
+                                maximumFractionDigits: 0
+                              }).format(transaction.price)}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex justify-between items-center text-xs text-gray-400">
+                          <div className="flex gap-4">
+                            <span>{transaction.number_of_bedrooms || 0} bed</span>
+                            <span>{transaction.number_of_bathrooms || 0} bath</span>
+                            <span>{transaction.property_type || 'Unknown'}</span>
+                            <span>{transaction.internal_area_square_metres || 0}m²</span>
+                          </div>
+                          <div className="text-right">
+                            <div>{new Date(transaction.transaction_date).toLocaleDateString('en-GB', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric'
+                            })}</div>
+                            <div>{transaction.distance_in_metres < 100 ? `${transaction.distance_in_metres}m` : `${(transaction.distance_in_metres / 1000).toFixed(1)}km`}</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Remove Button - Right Side */}
+                      <div className="flex-shrink-0 flex items-center">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleRemoveComparable(transaction.street_group_property_id)
+                          }}
+                          className="w-10 h-10 rounded-lg flex items-center justify-center transition-all backdrop-blur-sm bg-red-500/80 text-white hover:bg-red-400/80"
+                          title="Remove from comparables"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-gray-400">
+                <div className="text-4xl mb-4 opacity-50">🏘️</div>
+                <p>No comparables selected</p>
+                <p className="text-sm text-gray-500 mt-2">Select transactions from the main list to use as comparables</p>
+              </div>
+            )}
+          </div>
+        </GenericPanel>
+
+        {/* Transaction Details Panel */}
+        <GenericPanel
+          isOpen={activeSection === 'sold-comparables' && panelNavigation === 'details' && !!selectedTransaction}
+          onClose={handleCloseComparablesPanel}
+          title="Transaction Details"
+          isLargeScreen={isLargeScreen}
+          showBackButton={panelNavigation === 'details' && navigationSource === 'selected'}
+          onBack={handleBackToSelectedComparables}
+          zIndex={1001}
         >
           {selectedTransaction && renderTransactionDetails(selectedTransaction)}
         </GenericPanel>
+
+        {/* How It Works Dialog */}
+        {showHowItWorksDialog && (
+          <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
+            <div 
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => setShowHowItWorksDialog(false)}
+            />
+            <div className="relative bg-black/90 border border-gray-500/30 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold text-gray-100">How does it work?</h2>
+                <button
+                  onClick={() => setShowHowItWorksDialog(false)}
+                  className="text-gray-400 hover:text-gray-200 transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="space-y-4 text-sm text-gray-300">
+                <div className="flex items-start gap-3">
+                  <span className="text-green-400 font-bold">1.</span>
+                  <p>Click the <span className="text-green-400 font-semibold">+</span> button to select comparable properties</p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="text-green-400 font-bold">2.</span>
+                  <p>The valuation is calculated based on your selected comparables</p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="text-green-400 font-bold">3.</span>
+                  <p>Choose between Simple Average or Price per Square Metre calculation methods</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
     </div>

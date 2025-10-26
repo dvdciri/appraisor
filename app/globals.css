@@ -34,6 +34,18 @@
   }
 }
 
+@keyframes buttonPulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
 /* Custom radial gradient utility */
 .bg-gradient-radial {
   background: radial-gradient(circle, var(--tw-gradient-stops));
@@ -196,4 +208,20 @@ a {
 
 .hide-scrollbar::-webkit-scrollbar {
   display: none;  /* Safari and Chrome */
+}
+
+/* Floating badge slide up animation */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slideInUp {
+  animation: slideInUp 0.3s ease-out;
 }
