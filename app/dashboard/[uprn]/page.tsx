@@ -11,6 +11,7 @@ import WorkingUserMenu from '../../components/WorkingUserMenu'
 import MarketAnalysis from '../components/MarketAnalysis'
 import NearbyListings from '../components/NearbyListings'
 import StreetViewImage from '../components/StreetViewImage'
+import RefurbishmentEstimator from '../components/RefurbishmentEstimator'
 
 type Section = 'property-details' | 'market-analysis' | 'sold-comparables' | 'investment-calculator' | 'ai-refurbishment' | 'risk-assessment' | 'nearby-listings'
 
@@ -1734,6 +1735,21 @@ export default function DashboardV1() {
                                 <p className="text-gray-400">Loading nearby listings...</p>
                               </div>
                             )}
+                          </div>
+                        ) : activeSection === 'ai-refurbishment' ? (
+                          /* AI Refurbishment Estimator Section */
+                          <div className="w-full">
+                            <div className="flex items-center gap-3 mb-6">
+                              <span className="text-2xl">{sections.find(s => s.id === activeSection)?.icon}</span>
+                              <h1 className="text-2xl font-bold text-gray-100">{sections.find(s => s.id === activeSection)?.label}</h1>
+                            </div>
+                            <RefurbishmentEstimator 
+                              uprn={uprn}
+                              onDataUpdate={() => {
+                                // Trigger a refresh of calculator data if needed
+                                // This could be expanded to refresh other components
+                              }}
+                            />
                           </div>
                         ) : (
                           /* Other Sections - Empty Layout */
