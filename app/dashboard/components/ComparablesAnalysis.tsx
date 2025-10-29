@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react'
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import StreetViewImage from './StreetViewImage'
 import GenericPanel from './GenericPanel'
 
@@ -123,6 +123,12 @@ interface ComparablesAnalysisProps {
     bedrooms?: number
     bathrooms?: number
     internalArea?: number
+    location?: {
+      coordinates: {
+        latitude: number
+        longitude: number
+      }
+    }
   }
   onTransactionSelect?: (transaction: ComparableTransaction) => void
   onSelectedCountChange?: (count: number) => void
@@ -131,6 +137,7 @@ interface ComparablesAnalysisProps {
   onRemoveComparable?: (transactionId: string) => void
   selectedPanelOpen?: boolean
   refreshTrigger?: number
+  onOpenAIComparablesDialog?: () => void
 }
 
 // Loading Skeleton Component
@@ -187,7 +194,7 @@ const getStreetViewEmbedUrl = (latitude?: number, longitude?: number) => {
   if (!latitude || !longitude) return ''
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
   // Use the correct Street View embed URL format
-  return `https://www.google.com/maps/embed/v1/streetview?key=${apiKey}&location=${latitude},${longitude}&heading=0&pitch=0&fov=90`
+  return `https://www.google.com/maps/embed/v1/streetview?key=${apiKey}&location=${latitude},${longitude}&pitch=0&fov=90`
 }
 
 // Export function to render transaction details
@@ -439,16 +446,16 @@ function TransactionCard({
     e.stopPropagation()
     e.preventDefault()
     
+    // Update state immediately for instant UI feedback
     if (isSelected) {
-      // If already selected, deselect immediately
       onDeselect()
     } else {
-      // If not selected, show animation first, then select
       setIsAnimating(true)
+      onSelect()
+      // Clear animation state after a short delay
       setTimeout(() => {
-        onSelect()
         setIsAnimating(false)
-      }, 300) // Match the animation duration
+      }, 200)
     }
   }, [isSelected, onSelect, onDeselect])
   
@@ -824,7 +831,8 @@ export default function ComparablesAnalysis({
   onSelectedTransactionsChange,
   onRemoveComparable,
   selectedPanelOpen = false,
-  refreshTrigger
+  refreshTrigger,
+  onOpenAIComparablesDialog
 }: ComparablesAnalysisProps) {
   // State
   const [selectedComparableIds, setSelectedComparableIds] = useState<string[]>([])
@@ -887,6 +895,9 @@ export default function ComparablesAnalysis({
   }, [nearbyTransactions])
 
   // Load saved data on mount and when refreshTrigger changes
+  // Use a ref to track the previous refreshTrigger value to avoid unnecessary reloads
+  const prevRefreshTriggerRef = useRef<number | undefined>(undefined)
+  
   useEffect(() => {
     const loadSavedData = async () => {
       setIsLoadingValuation(true)
@@ -909,7 +920,14 @@ export default function ComparablesAnalysis({
       }
     }
     
-    loadSavedData()
+    // Only reload if refreshTrigger actually changed (not on every render)
+    const shouldReload = prevRefreshTriggerRef.current === undefined || 
+                        prevRefreshTriggerRef.current !== refreshTrigger
+    
+    if (shouldReload) {
+      prevRefreshTriggerRef.current = refreshTrigger
+      loadSavedData()
+    }
   }, [uprn, refreshTrigger])
 
   // Notify parent when selected count changes
@@ -920,32 +938,48 @@ export default function ComparablesAnalysis({
   }, [selectedComparableIds.length, onSelectedCountChange])
 
   // Notify parent when selected transactions change
-  useEffect(() => {
-    if (onSelectedTransactionsChange) {
-      const selectedProperties = groupedProperties.filter(p => 
-        selectedComparableIds.includes(p.street_group_property_id)
-      )
-      // Convert properties back to transactions for parent component compatibility
-      const selectedTransactions = selectedProperties.map(property => {
-        const latestTransaction = property.transactions[0]
-        return {
-          street_group_property_id: property.street_group_property_id,
-          address: property.address,
-          property_type: property.property_type,
-          transaction_date: latestTransaction.transaction_date,
-          price: latestTransaction.price,
-          internal_area_square_metres: latestTransaction.internal_area_square_metres,
-          price_per_square_metre: latestTransaction.price_per_square_metre,
-          number_of_bedrooms: property.number_of_bedrooms,
-          number_of_bathrooms: property.number_of_bathrooms,
-          location: property.location,
-          distance_in_metres: property.distance_in_metres,
-          tenure: property.tenure
-        } as ComparableTransaction
-      })
-      onSelectedTransactionsChange(selectedTransactions)
-    }
+  // Use useMemo to memoize the transactions array to avoid unnecessary updates
+  const selectedTransactionsForParent = useMemo(() => {
+    if (!onSelectedTransactionsChange) return null
+    
+    const selectedProperties = groupedProperties.filter(p => 
+      selectedComparableIds.includes(p.street_group_property_id)
+    )
+    // Convert properties back to transactions for parent component compatibility
+    return selectedProperties.map(property => {
+      const latestTransaction = property.transactions[0]
+      return {
+        street_group_property_id: property.street_group_property_id,
+        address: property.address,
+        property_type: property.property_type,
+        transaction_date: latestTransaction.transaction_date,
+        price: latestTransaction.price,
+        internal_area_square_metres: latestTransaction.internal_area_square_metres,
+        price_per_square_metre: latestTransaction.price_per_square_metre,
+        number_of_bedrooms: property.number_of_bedrooms,
+        number_of_bathrooms: property.number_of_bathrooms,
+        location: property.location,
+        distance_in_metres: property.distance_in_metres,
+        tenure: property.tenure
+      } as ComparableTransaction
+    })
   }, [selectedComparableIds, groupedProperties, onSelectedTransactionsChange])
+
+  // Only call the callback when the transactions array actually changes (by ID list)
+  // Use a ref to track previous IDs to avoid unnecessary callbacks
+  const prevSelectedIdsRef = useRef<string[]>([])
+  
+  useEffect(() => {
+    if (!onSelectedTransactionsChange) return
+    
+    // Only update if the IDs actually changed
+    const idsChanged = JSON.stringify(prevSelectedIdsRef.current.sort()) !== JSON.stringify(selectedComparableIds.sort())
+    
+    if (idsChanged && selectedTransactionsForParent !== null) {
+      prevSelectedIdsRef.current = [...selectedComparableIds]
+      onSelectedTransactionsChange(selectedTransactionsForParent)
+    }
+  }, [selectedComparableIds, selectedTransactionsForParent, onSelectedTransactionsChange])
 
   // Show loading when valuation strategy or selected comparables change
   useEffect(() => {
@@ -1085,11 +1119,44 @@ export default function ComparablesAnalysis({
   }, [selectedComparableIds, groupedProperties, valuationStrategy, subjectPropertySqm])
 
   // Save data with debouncing - only save when user makes changes, not on initial load
+  // Use a longer debounce time to batch rapid changes
+  // IMPORTANT: Don't include calculatedValuation in dependencies - it changes on every selection/deselection
+  // and would reset the debounce timer. Calculate it inside the save function instead.
   useEffect(() => {
     const saveData = async () => {
       if (!hasLoadedInitialData || !hasUserInteracted) return // Don't save until we've loaded initial data AND user has interacted
       
       try {
+        // Calculate valuation fresh at save time (don't rely on calculatedValuation state)
+        let valuationToSave: number | null = null
+        if (selectedComparableIds.length > 0) {
+          const selectedProperties = groupedProperties.filter(p => 
+            selectedComparableIds.includes(p.street_group_property_id)
+          )
+          
+          if (selectedProperties.length > 0) {
+            if (valuationStrategy === 'average') {
+              const totalPrice = selectedProperties.reduce((sum, p) => sum + (p.transactions[0]?.price || 0), 0)
+              valuationToSave = totalPrice / selectedProperties.length
+            } else {
+              // Price per sqm strategy
+              if (subjectPropertySqm > 0) {
+                const validProperties = selectedProperties.filter(p => {
+                  const latestTransaction = p.transactions[0]
+                  return latestTransaction?.price_per_square_metre && latestTransaction.price_per_square_metre > 0
+                })
+                if (validProperties.length > 0) {
+                  const totalPricePerSqm = validProperties.reduce((sum, p) => 
+                    sum + (p.transactions[0]?.price_per_square_metre || 0), 0
+                  )
+                  const avgPricePerSqm = totalPricePerSqm / validProperties.length
+                  valuationToSave = avgPricePerSqm * subjectPropertySqm
+                }
+              }
+            }
+          }
+        }
+        
         console.log('Saving comparables data:', {
           uprn,
           selected_comparable_ids: selectedComparableIds,
@@ -1105,7 +1172,7 @@ export default function ComparablesAnalysis({
             uprn,
             selected_comparable_ids: selectedComparableIds,
             valuation_strategy: valuationStrategy,
-            calculated_valuation: calculatedValuation
+            calculated_valuation: valuationToSave
           })
         })
         
@@ -1121,9 +1188,10 @@ export default function ComparablesAnalysis({
       }
     }
 
-    const timeoutId = setTimeout(saveData, 1000) // Debounce to 1 second
+    // Increased debounce time to 2.5 seconds to batch rapid toggles
+    const timeoutId = setTimeout(saveData, 2500)
     return () => clearTimeout(timeoutId)
-  }, [uprn, selectedComparableIds, valuationStrategy, hasLoadedInitialData, hasUserInteracted, calculatedValuation])
+  }, [uprn, selectedComparableIds, valuationStrategy, hasLoadedInitialData, hasUserInteracted, groupedProperties, subjectPropertySqm])
 
   // Debug logging in development
   useEffect(() => {
@@ -1147,77 +1215,16 @@ export default function ComparablesAnalysis({
   const handleDeselectComparable = useCallback((id: string) => {
     setSelectedComparableIds(prev => prev.filter(selectedId => selectedId !== id))
     setHasUserInteracted(true)
-    // Call the parent callback to remove from selected transactions
-    if (onRemoveComparable) {
-      onRemoveComparable(id)
-    }
-  }, [onRemoveComparable])
+    // Note: onRemoveComparable is only used when removing from the Selected Comparables panel in the parent
+    // The debounced save effect handles persistence, so we don't call it here to avoid duplicate saves/refreshes
+  }, [])
 
   const handleStrategyChange = useCallback((strategy: 'average' | 'price_per_sqm') => {
     setValuationStrategy(strategy)
     setHasUserInteracted(true)
-    // Force immediate save when strategy changes
-    // Use setTimeout to ensure state updates are processed first
-    setTimeout(async () => {
-      if (!hasLoadedInitialData) return
-      
-      try {
-        // Calculate valuation with the new strategy
-        let currentValuation: number | null = null
-        
-        if (selectedComparableIds.length > 0) {
-          const selectedProperties = groupedProperties.filter(p => 
-            selectedComparableIds.includes(p.street_group_property_id)
-          )
-          
-          if (selectedProperties.length > 0) {
-            if (strategy === 'average') {
-              const totalPrice = selectedProperties.reduce((sum, p) => sum + (p.transactions[0]?.price || 0), 0)
-              currentValuation = totalPrice / selectedProperties.length
-            } else {
-              // Price per sqm strategy
-              if (subjectPropertySqm > 0) {
-                const validProperties = selectedProperties.filter(p => {
-                  const latestTransaction = p.transactions[0]
-                  return latestTransaction?.price_per_square_metre && latestTransaction.price_per_square_metre > 0
-                })
-                if (validProperties.length > 0) {
-                  const totalPricePerSqm = validProperties.reduce((sum, p) => 
-                    sum + (p.transactions[0]?.price_per_square_metre || 0), 0
-                  )
-                  const avgPricePerSqm = totalPricePerSqm / validProperties.length
-                  currentValuation = avgPricePerSqm * subjectPropertySqm
-                }
-              }
-            }
-          }
-        }
-        
-        const response = await fetch('/api/db/comparables', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            uprn,
-            selected_comparable_ids: selectedComparableIds,
-            valuation_strategy: strategy,
-            calculated_valuation: currentValuation
-          })
-        })
-        
-        if (response.ok) {
-          const data = await response.json()
-          setSavedData(data)
-          console.log('Valuation strategy saved:', strategy)
-        } else {
-          console.error('Failed to save valuation strategy:', response.status, response.statusText)
-        }
-      } catch (error) {
-        console.error('Error saving valuation strategy:', error)
-      }
-    }, 200) // Small delay to ensure state updates are processed
-  }, [hasLoadedInitialData, selectedComparableIds, groupedProperties, subjectPropertySqm, uprn])
+    // Strategy change will be saved via the debounced save effect
+    // No need for immediate save - let the debounce handle it
+  }, [])
 
   const handleViewDetails = useCallback((property: PropertyWithTransactions) => {
     // Convert property to transaction format for the details panel
@@ -1251,6 +1258,12 @@ export default function ComparablesAnalysis({
   const handleClearAllSelected = useCallback(() => {
     setSelectedComparableIds([])
   }, [])
+
+  const handleAISelectComparables = useCallback(() => {
+    if (onOpenAIComparablesDialog) {
+      onOpenAIComparablesDialog()
+    }
+  }, [onOpenAIComparablesDialog])
 
 
 
@@ -1377,7 +1390,7 @@ export default function ComparablesAnalysis({
                 </h3>
                 {selectedProperties.length === 0 ? (
                   <div className="text-center py-8 text-gray-400">
-                    Selected comparables from the list below will show here
+                    <p className="mb-4">Selected comparables from the list below will show here</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -1514,7 +1527,13 @@ export default function ComparablesAnalysis({
               </h3>
               {selectedProperties.length === 0 ? (
                 <div className="text-center py-8 text-gray-400">
-                  Selected comparables from the list below will show here
+                  <p className="mb-4">Selected comparables from the list below will show here</p>
+                  <button
+                    onClick={handleAISelectComparables}
+                    className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-lg shadow-lg hover:shadow-purple-500/25 transition-all duration-200 text-sm font-medium"
+                  >
+                    Auto-select comparables with AI
+                  </button>
                 </div>
               ) : (
                 <div className="space-y-3">

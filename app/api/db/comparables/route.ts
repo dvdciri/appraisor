@@ -90,39 +90,37 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid valuation strategy' }, { status: 400 })
     }
 
-    // Get user_id from database
-    const userResult = await query(
-      'SELECT user_id FROM users WHERE email = $1',
-      [session.user.email]
-    )
-
-    if (userResult.rows.length === 0) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      )
-    }
-
-    const userId = userResult.rows[0].user_id
-
+    // Use a single query with CTE to get user_id and insert/update in one go
+    // This reduces database round trips
     const result = await query(
-      `INSERT INTO comparables_data (user_id, uprn, selected_comparable_ids, valuation_strategy, calculated_valuation)
-       VALUES ($1, $2, $3, $4, $5)
-       ON CONFLICT (user_id, uprn) 
-       DO UPDATE SET 
-         selected_comparable_ids = EXCLUDED.selected_comparable_ids,
-         valuation_strategy = EXCLUDED.valuation_strategy,
-         calculated_valuation = EXCLUDED.calculated_valuation,
-         last_updated = NOW()
-       RETURNING *`,
+      `WITH user_lookup AS (
+        SELECT user_id FROM users WHERE email = $1 LIMIT 1
+      )
+      INSERT INTO comparables_data (user_id, uprn, selected_comparable_ids, valuation_strategy, calculated_valuation)
+      SELECT user_id, $2, $3, $4, $5
+      FROM user_lookup
+      ON CONFLICT (user_id, uprn) 
+      DO UPDATE SET 
+        selected_comparable_ids = EXCLUDED.selected_comparable_ids,
+        valuation_strategy = EXCLUDED.valuation_strategy,
+        calculated_valuation = EXCLUDED.calculated_valuation,
+        last_updated = NOW()
+      RETURNING *`,
       [
-        userId,
+        session.user.email,
         uprn,
         JSON.stringify(selected_comparable_ids || []),
         valuation_strategy || 'average',
         calculated_valuation
       ]
     )
+
+    if (result.rows.length === 0) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      )
+    }
 
     return NextResponse.json(result.rows[0])
   } catch (error) {

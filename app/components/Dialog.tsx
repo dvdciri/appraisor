@@ -27,7 +27,7 @@ export default function Dialog({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-75 z-[1002] flex items-center justify-center p-4">
       <div className={`bg-gray-800 rounded-lg ${maxWidthClasses[maxWidth]} w-full border border-gray-600 shadow-2xl`}>
         {/* Header */}
         <div className="p-6 border-b border-gray-700 flex items-center justify-between">

@@ -43,7 +43,7 @@ export default function StreetViewImage({
   const encodedAddress = encodeURIComponent(fullAddress)
   
   // Google Street View Static API URL
-  const streetViewUrl = `https://maps.googleapis.com/maps/api/streetview?size=${size}&location=${encodedAddress}&heading=0&pitch=0&fov=90&key=${apiKey}`
+  const streetViewUrl = `https://maps.googleapis.com/maps/api/streetview?size=${size}&location=${encodedAddress}&pitch=0&fov=90&key=${apiKey}`
 
   const handleImageLoad = () => {
     setIsLoading(false)

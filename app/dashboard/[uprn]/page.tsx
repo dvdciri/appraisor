@@ -22,6 +22,7 @@ import MarketAnalysis from '../components/MarketAnalysis'
 import NearbyListings from '../components/NearbyListings'
 import StreetViewImage from '../components/StreetViewImage'
 import RefurbishmentEstimator from '../components/RefurbishmentEstimator'
+import Dialog from '../../components/Dialog'
 
 type Section = 'property-details' | 'market-analysis' | 'sold-comparables' | 'investment-calculator' | 'ai-refurbishment' | 'risk-assessment' | 'nearby-listings'
 
@@ -962,6 +963,25 @@ export default function DashboardV1() {
   const [copyConfirmation, setCopyConfirmation] = useState<string | null>(null)
   const [showHowItWorksDialog, setShowHowItWorksDialog] = useState(false)
   const [mapMode, setMapMode] = useState<'map' | 'street'>('map')
+  const [showAIComparablesDialog, setShowAIComparablesDialog] = useState(false)
+  const [aiComparablesResult, setAIComparablesResult] = useState<{
+    comparables: string[]
+    similarity_scores: Record<string, number>
+    brief_notes: Record<string, string>
+    context?: {
+      total_candidates_considered: number
+      relaxation_strategy: string
+      buckets_used?: string[]
+      candidates_sent_to_ai: number
+      target_comparables_count: number
+      size_tolerance_percent: number
+      min_similarity_score?: number
+    }
+  } | null>(null)
+  const [isLoadingAIComparables, setIsLoadingAIComparables] = useState(false)
+  const [aiComparablesError, setAIComparablesError] = useState<string | null>(null)
+  const [aiLoadingStatus, setAILoadingStatus] = useState<string>('')
+  const [aiLoadingProgress, setAILoadingProgress] = useState<number>(0)
   const uprn = params.uprn as string
 
   // Helper functions to safely extract property data
@@ -1002,7 +1022,7 @@ export default function DashboardV1() {
     if (!latitude || !longitude) return ''
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
     // Use the correct Street View embed URL format
-    return `https://www.google.com/maps/embed/v1/streetview?key=${apiKey}&location=${latitude},${longitude}&heading=0&pitch=0&fov=90`
+    return `https://www.google.com/maps/embed/v1/streetview?key=${apiKey}&location=${latitude},${longitude}&pitch=0&fov=90`
   }
 
 
@@ -1240,6 +1260,178 @@ export default function DashboardV1() {
     } catch (error) {
       console.error('Error removing comparable from database:', error)
     }
+  }
+
+  const handleOpenAIComparablesDialog = async () => {
+    if (!propertyData) return
+
+    const nearbyTransactions = getPropertyValue('nearby_completed_transactions') || []
+    const targetProperty = {
+      address: getPropertyValue('address.street_group_format.address_lines'),
+      postcode: getPropertyValue('address.street_group_format.postcode'),
+      propertyType: getPropertyValue('property_type.value'),
+      bedrooms: parseInt(getPropertyValue('number_of_bedrooms.value', '0')),
+      bathrooms: parseInt(getPropertyValue('number_of_bathrooms.value', '0')),
+      internalArea: parseFloat(getPropertyValue('internal_area_square_metres', '0')),
+      location: getPropertyValue('location')?.coordinates ? {
+        coordinates: {
+          latitude: parseFloat(getPropertyValue('location.coordinates.latitude', '0')),
+          longitude: parseFloat(getPropertyValue('location.coordinates.longitude', '0'))
+        }
+      } : null
+    }
+    const targetStreet = getPropertyValue('address.simplified_format.street', '')
+
+    if (!targetProperty.address || nearbyTransactions.length === 0) {
+      setAIComparablesError('Property data or transactions not available')
+      return
+    }
+
+    setShowAIComparablesDialog(true)
+    setIsLoadingAIComparables(true)
+    setAIComparablesResult(null)
+    setAIComparablesError(null)
+    
+    try {
+      // Use fetch with POST for SSE (EventSource doesn't support POST, so we'll use fetch with streaming)
+      const response = await fetch('/api/comparables-ai-select', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-use-sse': 'true',
+        },
+        body: JSON.stringify({
+          uprn,
+          nearbyTransactions,
+          targetProperty,
+          targetStreet
+        })
+      })
+
+      if (!response.ok || !response.body) {
+        throw new Error('Failed to start comparables selection')
+      }
+
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6))
+              
+              if (data.type === 'status') {
+                setAILoadingStatus(data.status)
+                setAILoadingProgress(data.progress || 0)
+              } else if (data.type === 'result') {
+                // Show results
+                setAIComparablesResult(data.data)
+                setIsLoadingAIComparables(false)
+              } else if (data.type === 'complete') {
+                setAILoadingProgress(100)
+                setIsLoadingAIComparables(false)
+              } else if (data.type === 'error') {
+                setAIComparablesError(data.message || 'Failed to select comparables')
+                setIsLoadingAIComparables(false)
+                setAILoadingStatus('')
+                setAILoadingProgress(0)
+              }
+            } catch (e) {
+              console.error('Error parsing SSE data:', e)
+            }
+          }
+        }
+      }
+    } catch (error: any) {
+      console.error('Error calling AI comparables selection:', error)
+      setAIComparablesError(error.message || 'Failed to select comparables with AI')
+      setIsLoadingAIComparables(false)
+      setAILoadingStatus('')
+      setAILoadingProgress(0)
+    }
+  }
+
+  const handleAcceptAIComparables = async () => {
+    if (aiComparablesResult && aiComparablesResult.comparables.length > 0) {
+      // Save selected comparables to database
+      try {
+        const response = await fetch('/api/db/comparables', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            uprn,
+            selected_comparable_ids: aiComparablesResult.comparables
+          })
+        })
+
+        if (response.ok) {
+          // Trigger refresh
+          setComparablesRefreshTrigger(prev => prev + 1)
+        }
+      } catch (error) {
+        console.error('Error saving comparables:', error)
+      }
+
+      setShowAIComparablesDialog(false)
+      setAIComparablesResult(null)
+      setAIComparablesError(null)
+    }
+  }
+
+  const handleRetryAIComparables = () => {
+    setAIComparablesResult(null)
+    setAIComparablesError(null)
+    handleOpenAIComparablesDialog()
+  }
+
+  // Debug function to simulate loading without API call
+  const handleDebugAILoading = () => {
+    const nearbyTransactions = getPropertyValue('nearby_completed_transactions') || []
+    // Reset all states
+    setShowAIComparablesDialog(true)
+    setIsLoadingAIComparables(true)
+    setAIComparablesResult(null)
+    setAIComparablesError(null)
+    setAILoadingStatus(`Analysing ${nearbyTransactions.length} transactions nearby`)
+    setAILoadingProgress(10)
+
+    // Progress simulation
+    const progressUpdates = [
+      { delay: 600, status: 'Selecting the best candidates', progress: 25 },
+      { delay: 1400, status: 'Identifying similarities from pictures', progress: 60 },
+      { delay: 2200, status: 'Putting it all together', progress: 80 },
+      { delay: 3000, status: 'Picking 5 top choices', progress: 85 },
+      { delay: 3500, status: 'Finalizing results', progress: 100 }
+    ]
+
+    const progressTimers = progressUpdates.map(({ delay, status, progress }) => 
+      setTimeout(() => {
+        setAILoadingStatus(status)
+        setAILoadingProgress(progress)
+      }, delay)
+    )
+
+    // Simulate completion after progress
+    setTimeout(() => {
+      progressTimers.forEach(timer => clearTimeout(timer))
+      setIsLoadingAIComparables(false)
+      setAILoadingStatus('')
+      setAILoadingProgress(0)
+      // Set a mock result or keep loading state
+      // For now, just stop loading to show the empty state
+    }, 4000)
   }
 
   // Show loading while checking authentication
@@ -1767,7 +1959,13 @@ export default function DashboardV1() {
                                   propertyType: getPropertyValue('property_type.value'),
                                   bedrooms: parseInt(getPropertyValue('number_of_bedrooms.value', '0')),
                                   bathrooms: parseInt(getPropertyValue('number_of_bathrooms.value', '0')),
-                                  internalArea: parseFloat(getPropertyValue('internal_area_square_metres', '0'))
+                                  internalArea: parseFloat(getPropertyValue('internal_area_square_metres', '0')),
+                                  location: getPropertyValue('location')?.coordinates ? {
+                                    coordinates: {
+                                      latitude: parseFloat(getPropertyValue('location.coordinates.latitude', '0')),
+                                      longitude: parseFloat(getPropertyValue('location.coordinates.longitude', '0'))
+                                    }
+                                  } : undefined
                                 }}
                                 onTransactionSelect={handleTransactionSelect}
                                 onSelectedCountChange={setSelectedComparablesCount}
@@ -1776,6 +1974,7 @@ export default function DashboardV1() {
                                 onRemoveComparable={handleRemoveComparable}
                                 selectedPanelOpen={selectedComparablesPanelOpen}
                                 refreshTrigger={comparablesRefreshTrigger}
+                                onOpenAIComparablesDialog={handleOpenAIComparablesDialog}
                               />
                             ) : (
                               <div className="text-center py-8 text-gray-400">
@@ -2055,6 +2254,203 @@ export default function DashboardV1() {
             </div>
           </div>
         )}
+
+        {/* AI Comparables Selection Dialog */}
+        <Dialog
+          isOpen={showAIComparablesDialog}
+          onClose={() => {
+            setShowAIComparablesDialog(false)
+            setAIComparablesResult(null)
+            setAIComparablesError(null)
+            setAILoadingStatus('')
+            setAILoadingProgress(0)
+          }}
+          title="AI Comparables Selection"
+          maxWidth="xl"
+        >
+          {/* Debug Button - visible when dialog is open and not loading/showing results */}
+          <div className="absolute top-4 right-16 z-10">
+            {!isLoadingAIComparables && !aiComparablesResult && !aiComparablesError && (
+              <button
+                onClick={handleDebugAILoading}
+                className="text-xs text-gray-400 hover:text-gray-300 px-2 py-1 rounded bg-gray-700/50 hover:bg-gray-700 transition-colors"
+                title="Debug: Simulate loading state"
+              >
+                🔧 Debug
+              </button>
+            )}
+          </div>
+          {isLoadingAIComparables ? (
+            <div className="flex flex-col items-center justify-center py-12 px-4">
+              <div className="animate-spin rounded-full h-16 w-16 border-4 border-purple-500/30 border-t-purple-500 mb-6"></div>
+              <p className="text-gray-200 text-xl font-medium text-center mb-6">
+                Our AI agent is finding the best comparables for your property
+              </p>
+              
+              {/* Status Updates */}
+              <div className="w-full max-w-md space-y-4">
+                {aiLoadingStatus && (
+                  <div className="text-center">
+                    <p className="text-gray-300 text-sm mb-3">{aiLoadingStatus}</p>
+                    {/* Progress Bar */}
+                    <div className="w-full bg-gray-700/50 rounded-full h-2 overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-500 ease-out"
+                        style={{ width: `${aiLoadingProgress}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : aiComparablesError ? (
+            <div className="flex flex-col items-center justify-center py-12">
+              <div className="text-4xl mb-4">⚠️</div>
+              <p className="text-gray-300 text-lg mb-2">Error</p>
+              <p className="text-gray-400 text-sm mb-6">{aiComparablesError}</p>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleRetryAIComparables}
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-2 rounded-lg shadow-lg hover:shadow-purple-500/25 transition-all duration-200 text-sm font-medium"
+                >
+                  Retry
+                </button>
+                <button
+                  onClick={() => {
+                    setShowAIComparablesDialog(false)
+                    setAIComparablesError(null)
+                  }}
+                  className="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-500 transition-all duration-200 text-sm font-medium"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          ) : aiComparablesResult ? (
+            <div className="space-y-6">
+              {/* Result Summary */}
+              {aiComparablesResult.context && (
+                <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/30 rounded-lg p-4">
+                  <h4 className="text-sm font-semibold text-gray-200 mb-2">Result Summary</h4>
+                  <p className="text-sm text-gray-300 leading-relaxed">
+                    Analysed <span className="font-semibold text-gray-100">{aiComparablesResult.context.total_candidates_considered}</span> nearby transactions
+                    {' '}matching the property type, size (±{aiComparablesResult.context.size_tolerance_percent}%), bedrooms, and bathrooms.
+                    {' '}Assessed <span className="font-semibold text-gray-100">{aiComparablesResult.context.candidates_sent_to_ai}</span> candidates across {aiComparablesResult.context.buckets_used?.length || 1} search strategies, selecting only properties with visual similarity ≥{aiComparablesResult.context.min_similarity_score || 80}%.
+                    {' '}The top <span className="font-semibold text-gray-100">{aiComparablesResult.comparables.length}</span> properties below were selected from strategies: <span className="font-semibold text-gray-100">{aiComparablesResult.context.relaxation_strategy.toLowerCase()}</span>.
+                  </p>
+                </div>
+              )}
+
+              {/* Selected Comparables */}
+              <div>
+                <h4 className="text-lg font-semibold text-gray-100 mb-4">
+                  Selected Comparables ({aiComparablesResult.comparables.length})
+                </h4>
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {aiComparablesResult.comparables.map(propertyId => {
+                    const nearbyTransactions = getPropertyValue('nearby_completed_transactions') || []
+                    const transaction = nearbyTransactions.find((t: any) => t.street_group_property_id === propertyId)
+                    if (!transaction) return null
+                    const similarityScore = aiComparablesResult.similarity_scores?.[propertyId]
+                    const briefNotes = aiComparablesResult.brief_notes?.[propertyId]
+                    return (
+                      <div key={transaction.street_group_property_id} className="bg-black/20 border border-gray-500/30 rounded-lg p-4">
+                        <div className="flex gap-4">
+                          {/* Street View Image */}
+                          <div className="flex-shrink-0">
+                            <StreetViewImage
+                              address={transaction.address?.street_group_format?.address_lines || ''}
+                              postcode={transaction.address?.street_group_format?.postcode || ''}
+                              latitude={transaction.location?.coordinates?.latitude}
+                              longitude={transaction.location?.coordinates?.longitude}
+                              className="w-20 h-20 object-cover rounded-lg"
+                            />
+                          </div>
+                          
+                          {/* Property Info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex justify-between items-start mb-2">
+                              <div className="flex-1">
+                                <h4 className="text-sm font-medium text-gray-100 mb-1">
+                                  {transaction.address?.street_group_format?.address_lines || 'Address not available'}
+                                </h4>
+                                <p className="text-xs text-gray-400">
+                                  {transaction.address?.street_group_format?.postcode || 'Postcode not available'}
+                                </p>
+                              </div>
+                              <div className="text-right ml-4">
+                                <div className="text-lg font-bold text-white">
+                                  {new Intl.NumberFormat('en-GB', {
+                                    style: 'currency',
+                                    currency: 'GBP',
+                                    minimumFractionDigits: 0,
+                                    maximumFractionDigits: 0
+                                  }).format(transaction.price)}
+                                </div>
+                                {similarityScore !== undefined && (
+                                  <div className="mt-1">
+                                    <span className="text-xs text-gray-400">Similarity:</span>
+                                    <span className={`text-xs font-semibold ml-1 ${
+                                      similarityScore >= 80 ? 'text-green-400' :
+                                      similarityScore >= 60 ? 'text-yellow-400' :
+                                      'text-orange-400'
+                                    }`}>
+                                      {similarityScore}%
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            
+                            <div className="flex justify-between items-center text-xs text-gray-400 mb-2">
+                              <div className="flex gap-4">
+                                <span>{transaction.number_of_bedrooms || 0} bed</span>
+                                <span>{transaction.number_of_bathrooms || 0} bath</span>
+                                <span>{transaction.property_type || 'Unknown'}</span>
+                                <span>{transaction.internal_area_square_metres || 0}m²</span>
+                              </div>
+                              <div className="text-right">
+                                <div>{new Date(transaction.transaction_date).toLocaleDateString('en-GB', {
+                                  day: '2-digit',
+                                  month: 'short',
+                                  year: 'numeric'
+                                })}</div>
+                                <div>{transaction.distance_in_metres < 100 ? `${transaction.distance_in_metres}m` : `${(transaction.distance_in_metres / 1000).toFixed(1)}km`}</div>
+                              </div>
+                            </div>
+
+                            {/* Brief Notes */}
+                            {briefNotes && (
+                              <div className="mt-2 pt-2 border-t border-gray-600/30">
+                                <p className="text-xs text-gray-300 italic">{briefNotes}</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 justify-end pt-4 border-t border-gray-700">
+                <button
+                  onClick={handleRetryAIComparables}
+                  className="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-500 transition-all duration-200 text-sm font-medium"
+                >
+                  Retry
+                </button>
+                <button
+                  onClick={handleAcceptAIComparables}
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-2 rounded-lg shadow-lg hover:shadow-purple-500/25 transition-all duration-200 text-sm font-medium"
+                >
+                  Accept comparables
+                </button>
+              </div>
+            </div>
+          ) : null}
+        </Dialog>
 
       </div>
     </div>
