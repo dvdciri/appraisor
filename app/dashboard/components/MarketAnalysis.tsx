@@ -144,15 +144,26 @@ const MarketAnalysis = ({ marketStatistics }: MarketAnalysisProps) => {
   }
 
   // Helper function to get data based on property type selection
-  const getDataForPropertyType = (geography: 'outcode' | 'local_authority' | 'national') => {
+  const getDataForPropertyType = (
+    geography: 'outcode' | 'local_authority' | 'national'
+  ): MarketStatistics['outcode'] | PropertyTypeStatistics => {
     const baseData = marketStatistics[geography]
-    
+
     if (selectedPropertyType === 'all') {
       return baseData
     }
-    
-    const propertyTypeKey = `${selectedPropertyType}_statistics` as keyof typeof baseData
-    return baseData[propertyTypeKey] || baseData
+
+    const propertyTypeKey = `${selectedPropertyType}_statistics` as
+      | 'detached_statistics'
+      | 'semi_detached_statistics'
+      | 'terraced_statistics'
+      | 'flat_statistics'
+
+    const propertyTypeData = (baseData as any)[propertyTypeKey] as
+      | PropertyTypeStatistics
+      | undefined
+
+    return propertyTypeData ?? baseData
   }
 
   // Helper function to format currency
