@@ -477,8 +477,6 @@ async function handleRegularRequest(request: NextRequest) {
         beds: targetPropertyData.bedrooms,
         baths: targetPropertyData.bathrooms,
         sqm: targetPropertyData.internalArea,
-        size_min: sizeMin,
-        size_max: sizeMax,
         street: targetStreet
       },
       transaction_analysis: {
