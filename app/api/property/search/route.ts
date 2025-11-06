@@ -153,7 +153,6 @@ export async function POST(request: NextRequest) {
 }
 
 async function fetchRealPropertyDetails(address: string, postcode: string): Promise<any> {
-  // Check if API key is available
   if (!process.env.STREET_API_KEY) {
     console.error('STREET_API_KEY not found. Please configure your API key.');
     throw new Error('STREET_API_KEY not found. Please configure your API key.');
