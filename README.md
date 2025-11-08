@@ -85,5 +85,8 @@ Questions? Contact us at [info@doorlyproperties.com](mailto:info@doorlypropertie
 
 ## License
 
-This project is open source. See the main [Appraisor repository](https://github.com/dvdciri/appraisor) for more details.
+Appraisor is built under **AGPLv3 + Commercial License**.
+
+- **AGPLv3**: For open source use and contributions. If you use Appraisor in your project, you must also open source your project under AGPLv3.
+- **Commercial License**: Available for commercial use without open source requirements. Contact us at [info@doorlyproperties.com](mailto:info@doorlyproperties.com) for commercial licensing options.
 
