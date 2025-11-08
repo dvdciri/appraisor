@@ -1,0 +1,21 @@
+Appraisor — Source-Available License (Non-Commercial)
+
+Copyright (c) 2025 Doorly Properties Ltd. All rights reserved.
+
+This source code is made available for evaluation, education, personal, or
+non-commercial use only. Commercial use, distribution, hosting, resale,
+or incorporation of this software into products or services that generate
+revenue is strictly prohibited without a separate commercial license
+issued by Doorly Properties Ltd.
+
+If you wish to use Appraisor commercially (including embedding in a
+paid product, offering as part of a hosted service, or selling access),
+you must obtain a commercial license from Doorly Properties Ltd. Contact:
+info@doorlyproperties.com
+
+Attribution requirement (for any permitted distribution under this license):
+You must include the following attribution in a visible location (e.g., application footer, About page):
+"Powered by Appraisor — Doorly Properties Ltd."
+
+This software is provided "as is", without warranty of any kind.
+Get in touch at info@doorlyproperties.com for commercial licensing terms.
