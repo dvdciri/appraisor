@@ -435,44 +435,13 @@ export default function LandingPage() {
                 <p className="text-sm text-gray-300 mb-4">Get instant access to comparables, market data, and key property metrics.</p>
                 <div className="mb-4">
                   <div className="w-full flex flex-col items-center justify-center">
-                    <div className="grid grid-cols-3 gap-2 w-full">
-                      <div className="bg-white/10 rounded p-1.5 text-center min-h-[60px] flex flex-col justify-center overflow-hidden">
-                        <div className="text-lg mb-0.5">🏠</div>
-                        <div className="text-[10px] text-gray-300 leading-tight break-words px-0.5">Sold Prices</div>
-                      </div>
-                      <div className="bg-white/10 rounded p-1.5 text-center min-h-[60px] flex flex-col justify-center overflow-hidden">
-                        <div className="text-lg mb-0.5">📈</div>
-                        <div className="text-[10px] text-gray-300 leading-tight break-words px-0.5">Rental Yields</div>
-                      </div>
-                      <div className="bg-white/10 rounded p-1.5 text-center min-h-[60px] flex flex-col justify-center overflow-hidden">
-                        <div className="text-lg mb-0.5">⚡</div>
-                        <div className="text-[10px] text-gray-300 leading-tight break-words px-0.5">EPC</div>
-                      </div>
-                      <div className="bg-white/10 rounded p-1.5 text-center min-h-[60px] flex flex-col justify-center overflow-hidden">
-                        <div className="text-lg mb-0.5">📐</div>
-                        <div className="text-[10px] text-gray-300 leading-tight break-words px-0.5">Plot Data</div>
-                      </div>
-                      <div className="bg-white/10 rounded p-1.5 text-center min-h-[60px] flex flex-col justify-center overflow-hidden">
-                        <div className="text-lg mb-0.5">🔍</div>
-                        <div className="text-[10px] text-gray-300 leading-tight break-words px-0.5">Crime Rate</div>
-                      </div>
-                      <div className="bg-white/10 rounded p-1.5 text-center min-h-[60px] flex flex-col justify-center overflow-hidden">
-                        <div className="text-lg mb-0.5">📊</div>
-                        <div className="text-[10px] text-gray-300 leading-tight break-words px-0.5">Comparables</div>
-                      </div>
-                      <div className="bg-white/10 rounded p-1.5 text-center min-h-[60px] flex flex-col justify-center overflow-hidden">
-                        <div className="text-lg mb-0.5">🏘️</div>
-                        <div className="text-[10px] text-gray-300 leading-tight break-words px-0.5">For Sale</div>
-                      </div>
-                      <div className="bg-white/10 rounded p-1.5 text-center min-h-[60px] flex flex-col justify-center overflow-hidden">
-                        <div className="text-lg mb-0.5">🏠</div>
-                        <div className="text-[10px] text-gray-300 leading-tight break-words px-0.5">To Rent</div>
-                      </div>
-                      <div className="bg-white/10 rounded p-1.5 text-center min-h-[60px] flex flex-col justify-center overflow-hidden">
-                        <div className="text-lg mb-0.5">🚇</div>
-                        <div className="text-[10px] text-gray-300 leading-tight break-words px-0.5">Transport</div>
-                      </div>
-                    </div>
+                    <Image 
+                      src="/market.png" 
+                      alt="Market Analysis Dashboard" 
+                      width={600} 
+                      height={400} 
+                      className="w-full h-auto rounded-lg object-contain"
+                    />
                   </div>
                 </div>
               </div>
@@ -486,37 +455,14 @@ export default function LandingPage() {
                 <h3 className="text-lg font-bold text-white mb-2">Auto comparables & valuation</h3>
                 <p className="text-sm text-gray-300 mb-4">See accurate comparables and valuations in seconds, with transparent data on how we got there.</p>
                 <div className="mb-4">
-                  <div className="w-full flex flex-col justify-center">
-                    <div className="bg-white/10 rounded-lg p-3 mb-3">
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-xs text-gray-300">Property Value</span>
-                        <span className="text-xs text-white font-bold">£425,000</span>
-                      </div>
-                      <div className="text-[10px] text-gray-400">AI Valuation</div>
-                    </div>
-                    <div className="grid grid-cols-3 gap-1">
-                      <div className="bg-white/10 rounded p-2 text-center">
-                        <div className="text-[8px] text-gray-300">Comp 1</div>
-                        <div className="text-[8px] text-white font-medium">£420k</div>
-                        <div className="mt-2 w-full p-1">
-                          <Image src="/comp1.png" alt="Comparable 1" width={80} height={80} className="w-full aspect-square object-cover rounded" />
-                        </div>
-                      </div>
-                      <div className="bg-white/10 rounded p-2 text-center">
-                        <div className="text-[8px] text-gray-300">Comp 2</div>
-                        <div className="text-[8px] text-white font-medium">£430k</div>
-                        <div className="mt-2 w-full p-1">
-                          <Image src="/comp2.png" alt="Comparable 2" width={80} height={80} className="w-full aspect-square object-cover rounded" />
-                        </div>
-                      </div>
-                      <div className="bg-white/10 rounded p-2 text-center">
-                        <div className="text-[8px] text-gray-300">Comp 3</div>
-                        <div className="text-[8px] text-white font-medium">£428k</div>
-                        <div className="mt-2 w-full p-1">
-                          <Image src="/comp3.png" alt="Comparable 3" width={80} height={80} className="w-full aspect-square object-cover rounded" />
-                        </div>
-                      </div>
-                    </div>
+                  <div className="w-full flex flex-col items-center justify-center">
+                    <Image 
+                      src="/valuation.png" 
+                      alt="Property Valuation Dashboard" 
+                      width={600} 
+                      height={400} 
+                      className="w-full h-auto rounded-lg object-contain"
+                    />
                   </div>
                 </div>
               </div>
