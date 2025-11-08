@@ -625,7 +625,7 @@ export default function LandingPage() {
                 <div className="relative z-10">
                   <div className="flex flex-col items-center text-center mb-8">
                     <Image
-                      src="https://avatars.githubusercontent.com/u/3275819?v=4"
+                      src="/davide.jpeg"
                       alt="Founder portrait"
                       width={128}
                       height={128}
