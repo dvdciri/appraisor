@@ -9,6 +9,7 @@ const nextConfig = {
       'lh6.googleusercontent.com',
       'cdn.data.street.co.uk',
       'media.rightmove.co.uk',
+      'avatars.githubusercontent.com',
     ],
   },
 }
