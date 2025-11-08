@@ -20,6 +20,7 @@ export default function LandingPage() {
   const [visibleSectionTitles, setVisibleSectionTitles] = useState<string[]>([])
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [featuresHeadingVisible, setFeaturesHeadingVisible] = useState(false)
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null)
   const pricingRef = useRef<HTMLDivElement | null>(null)
   const emailInputRef = useRef<HTMLInputElement | null>(null)
   const sectionTitleRefs = useRef<{ [key: string]: HTMLElement | null }>({})
@@ -221,6 +222,7 @@ export default function LandingPage() {
               <a href="#customers" className="text-white hover:text-purple-300 transition-colors scroll-smooth">Customers</a>
               <a href="#why-appraisor" className="text-white hover:text-purple-300 transition-colors scroll-smooth">Why Appraisor?</a>
               <a href="#pricing" className="text-white hover:text-purple-300 transition-colors scroll-smooth">Pricing</a>
+              <a href="#faqs" className="text-white hover:text-purple-300 transition-colors scroll-smooth">FAQs</a>
             </div>
 
             {/* Action Buttons */}
@@ -273,6 +275,13 @@ export default function LandingPage() {
                   className="text-white hover:text-purple-300 transition-colors scroll-smooth py-2"
                 >
                   Pricing
+                </a>
+                <a 
+                  href="#faqs" 
+                  onClick={handleNavClick}
+                  className="text-white hover:text-purple-300 transition-colors scroll-smooth py-2"
+                >
+                  FAQs
                 </a>
                 <button 
                   onClick={() => {
@@ -719,6 +728,186 @@ export default function LandingPage() {
                   </div>
                   <p className="text-white text-lg leading-relaxed">We promise, no subscriptions, minimum periods, or hidden fees, you pay for what you use and can cancel anytime</p>
                 </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* FAQs Section */}
+        <section 
+          id="faqs"
+          className="px-6 md:px-8 pb-12 md:pb-16 mt-16 md:mt-28 scroll-mt-24 md:scroll-mt-28"
+          aria-labelledby="faqs-heading"
+        >
+          <div className="max-w-4xl mx-auto">
+            <h2 
+              ref={(el) => { sectionTitleRefs.current['faqs'] = el }}
+              data-section-title="faqs"
+              id="faqs-heading" 
+              className={`text-3xl font-bold text-white mb-12 text-center transition-all duration-700 ease-out ${
+                visibleSectionTitles.includes('faqs')
+                  ? 'opacity-100 translate-y-0' 
+                  : 'opacity-0 translate-y-8'
+              }`}
+            >
+              Frequently Asked <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Questions</span>
+            </h2>
+
+            <div className="space-y-4">
+              {/* FAQ 1 */}
+              <div className="bg-black/20 backdrop-blur-xl border border-gray-500/30 rounded-xl overflow-hidden hover:bg-black/30 transition-all">
+                <button
+                  onClick={() => setOpenFaqIndex(openFaqIndex === 0 ? null : 0)}
+                  className="w-full px-6 py-4 text-left flex items-center justify-between focus:outline-none"
+                  aria-expanded={openFaqIndex === 0}
+                >
+                  <span className="text-lg font-semibold text-white pr-4">
+                    Is Appraisor a tool to find investment properties?
+                  </span>
+                  <svg
+                    className={`w-5 h-5 text-purple-400 flex-shrink-0 transition-transform duration-200 ${
+                      openFaqIndex === 0 ? 'rotate-180' : ''
+                    }`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {openFaqIndex === 0 && (
+                  <div className="px-6 pb-4">
+                    <p className="text-gray-300 leading-relaxed">
+                      No. Appraisor isn't designed to source or find investment opportunities. It's built to assess and analyse properties you're already considering — helping you make faster, data-backed decisions with confidence.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* FAQ 2 */}
+              <div className="bg-black/20 backdrop-blur-xl border border-gray-500/30 rounded-xl overflow-hidden hover:bg-black/30 transition-all">
+                <button
+                  onClick={() => setOpenFaqIndex(openFaqIndex === 1 ? null : 1)}
+                  className="w-full px-6 py-4 text-left flex items-center justify-between focus:outline-none"
+                  aria-expanded={openFaqIndex === 1}
+                >
+                  <span className="text-lg font-semibold text-white pr-4">
+                    Who is Appraisor for?
+                  </span>
+                  <svg
+                    className={`w-5 h-5 text-purple-400 flex-shrink-0 transition-transform duration-200 ${
+                      openFaqIndex === 1 ? 'rotate-180' : ''
+                    }`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {openFaqIndex === 1 && (
+                  <div className="px-6 pb-4">
+                    <p className="text-gray-300 leading-relaxed">
+                      Appraisor is for landlords, investors, developers, and anyone evaluating property in the UK. Whether you're buying, selling, or refinancing, it gives you clear insights and valuations in one simple platform.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* FAQ 3 */}
+              <div className="bg-black/20 backdrop-blur-xl border border-gray-500/30 rounded-xl overflow-hidden hover:bg-black/30 transition-all">
+                <button
+                  onClick={() => setOpenFaqIndex(openFaqIndex === 2 ? null : 2)}
+                  className="w-full px-6 py-4 text-left flex items-center justify-between focus:outline-none"
+                  aria-expanded={openFaqIndex === 2}
+                >
+                  <span className="text-lg font-semibold text-white pr-4">
+                    How is Appraisor different from Excel or other calculators?
+                  </span>
+                  <svg
+                    className={`w-5 h-5 text-purple-400 flex-shrink-0 transition-transform duration-200 ${
+                      openFaqIndex === 2 ? 'rotate-180' : ''
+                    }`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {openFaqIndex === 2 && (
+                  <div className="px-6 pb-4">
+                    <p className="text-gray-300 leading-relaxed">
+                      Unlike traditional spreadsheets, Appraisor doesn't just automate calculations — it gives you all the data you need to make informed decisions in one place.
+                      <br /><br />
+                      From valuations and comparables to refurbishment estimates, everything is generated instantly using real data and AI — no more juggling endless tabs or manual inputs.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* FAQ 4 */}
+              <div className="bg-black/20 backdrop-blur-xl border border-gray-500/30 rounded-xl overflow-hidden hover:bg-black/30 transition-all">
+                <button
+                  onClick={() => setOpenFaqIndex(openFaqIndex === 3 ? null : 3)}
+                  className="w-full px-6 py-4 text-left flex items-center justify-between focus:outline-none"
+                  aria-expanded={openFaqIndex === 3}
+                >
+                  <span className="text-lg font-semibold text-white pr-4">
+                    How much does it cost to use Appraisor?
+                  </span>
+                  <svg
+                    className={`w-5 h-5 text-purple-400 flex-shrink-0 transition-transform duration-200 ${
+                      openFaqIndex === 3 ? 'rotate-180' : ''
+                    }`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {openFaqIndex === 3 && (
+                  <div className="px-6 pb-4">
+                    <p className="text-gray-300 leading-relaxed">
+                      Appraisor works on a simple credit system — no subscriptions, no hidden fees.
+                      <br /><br />
+                      Each analysis, estimation, or operation on the website costs a certain number of credits. Credits have a monetary value, and the more you buy, the more affordable they become.
+                      <br /><br />
+                      You only pay for what you use, making Appraisor flexible and cost-effective for every type of property investor.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* FAQ 5 */}
+              <div className="bg-black/20 backdrop-blur-xl border border-gray-500/30 rounded-xl overflow-hidden hover:bg-black/30 transition-all">
+                <button
+                  onClick={() => setOpenFaqIndex(openFaqIndex === 4 ? null : 4)}
+                  className="w-full px-6 py-4 text-left flex items-center justify-between focus:outline-none"
+                  aria-expanded={openFaqIndex === 4}
+                >
+                  <span className="text-lg font-semibold text-white pr-4">
+                    Where does Appraisor get its data?
+                  </span>
+                  <svg
+                    className={`w-5 h-5 text-purple-400 flex-shrink-0 transition-transform duration-200 ${
+                      openFaqIndex === 4 ? 'rotate-180' : ''
+                    }`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {openFaqIndex === 4 && (
+                  <div className="px-6 pb-4">
+                    <p className="text-gray-300 leading-relaxed">
+                      Our property data is powered by <a href="https://data.street.co.uk/" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:text-purple-300 underline transition-colors">Street Data API</a>, one of the UK's most comprehensive property data sources. It provides accurate, up-to-date information on sold prices, listings, and local market insights — ensuring every analysis is based on reliable data.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
