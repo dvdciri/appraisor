@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { CONFIG } from '@/lib/config'
-import { query } from '@/lib/db/client'
+import { getClient } from '@/lib/db/client'
 
 // Email validation regex
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -60,7 +60,8 @@ export async function POST(request: NextRequest) {
     // Get current subscriber count from our database to determine if this is one of the first N subscribers
     let isFirstNSubscriber = false
     try {
-      const result = await query('SELECT COUNT(*) as total FROM subscriptions')
+      const db = await getClient()
+      const result = await db.query('SELECT COUNT(*) as total FROM subscriptions')
       const currentCount = parseInt(result.rows[0].total) || 0
       isFirstNSubscriber = currentCount < CONFIG.MAX_FREE_SPOTS
     } catch (error) {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { CONFIG } from '@/lib/config'
-import { query } from '@/lib/db/client'
+import { getClient } from '@/lib/db/client'
 
 // Force dynamic rendering - prevents caching at edge/CDN level
 export const dynamic = 'force-dynamic'
@@ -8,8 +8,10 @@ export const revalidate = 0
 
 export async function GET(request: NextRequest) {
   try {
+    const db = await getClient()
+    
     // Get total subscription count from our database
-    const result = await query('SELECT COUNT(*) as total FROM subscriptions')
+    const result = await db.query('SELECT COUNT(*) as total FROM subscriptions')
     const subscriberCount = parseInt(result.rows[0].total) || 0
     
     const response = NextResponse.json(

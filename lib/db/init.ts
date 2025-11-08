@@ -1,17 +1,8 @@
-#!/usr/bin/env node
+import { query } from './client'
 
-/**
- * Database initialization script
- * Run this script to initialize the database before starting the application
- * 
- * Usage: node scripts/init-db.js
- */
-
-const { query } = require('../lib/db/client')
-
-async function initializeDatabase() {
+export async function initializeDatabase(): Promise<void> {
   try {
-    console.log('🚀 Starting database initialization...')
+    console.log('Initializing database...')
     
     // Clear existing user-specific data to start fresh with authentication
     try {
@@ -140,21 +131,41 @@ async function initializeDatabase() {
       console.error('Error creating indexes:', error)
     }
     
-    console.log('✅ Database initialization completed successfully!')
+    console.log('Database initialized successfully')
   } catch (error) {
-    console.error('❌ Database initialization failed:', error)
+    console.error('Failed to initialize database:', error)
     throw error
   }
 }
 
-async function main() {
+// Check if database is properly initialized
+export async function checkDatabaseHealth(): Promise<boolean> {
   try {
-    await initializeDatabase()
-    process.exit(0)
+    // Check if all required tables exist
+    const result = await query(`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public' 
+      AND table_name IN ('users', 'properties', 'user_search_history', 'calculator_data', 'comparables_data', 'subscriptions')
+    `)
+    
+    const expectedTables = ['users', 'properties', 'user_search_history', 'calculator_data', 'comparables_data', 'subscriptions']
+    const existingTables = result.rows.map((row: any) => row.table_name)
+    
+    const allTablesExist = expectedTables.every(table => existingTables.includes(table))
+    
+    if (!allTablesExist) {
+      console.warn('Some required tables are missing:', {
+        expected: expectedTables,
+        existing: existingTables
+      })
+      return false
+    }
+    
+    console.log('Database health check passed')
+    return true
   } catch (error) {
-    console.error('❌ Database initialization failed:', error)
-    process.exit(1)
+    console.error('Database health check failed:', error)
+    return false
   }
 }
-
-main()

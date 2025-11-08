@@ -11,12 +11,27 @@
     "dev:init": "npm run init-db && npm run dev"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.2.2",
+    "@openai/agents": "^0.1.9",
+    "@radix-ui/react-slot": "^1.2.3",
+    "@react-pdf/renderer": "^4.3.0",
     "@types/pg": "^8.15.5",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "dotenv": "^17.2.3",
+    "lucide-react": "^0.544.0",
     "next": "14.0.0",
+    "next-auth": "^4.24.11",
+    "node-fetch": "^3.3.2",
+    "openai": "^4.67.3",
     "pg": "^8.16.3",
     "react": "^18",
-    "react-dom": "^18"
+    "react-dom": "^18",
+    "react-hook-form": "^7.62.0",
+    "recharts": "^3.3.0",
+    "tailwind-merge": "^3.3.1",
+    "zod": "^3.23.8",
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.8.0",

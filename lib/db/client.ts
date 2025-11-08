@@ -13,7 +13,7 @@ export function getPool(): Pool {
       ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
       max: 20, // Maximum number of clients in the pool
       idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-      connectionTimeoutMillis: 10000, // Return an error after 10 seconds if connection could not be established
+      connectionTimeoutMillis: 2000, // Return an error after 2 seconds if connection could not be established
     })
 
     // Handle pool errors
@@ -32,10 +32,11 @@ export async function query(text: string, params?: any[]): Promise<any> {
   try {
     const result = await pool.query(text, params)
     const duration = Date.now() - start
-    console.log('Executed query', { text, duration, rows: result.rowCount })
     return result
   } catch (error) {
-    console.error('Database query error', { text, error })
+    // Log error without exposing query text or parameters
+    const queryType = text.trim().split(/\s+/)[0].toUpperCase()
+    console.error('Database query error', { type: queryType, error })
     throw error
   }
 }
