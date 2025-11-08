@@ -196,7 +196,7 @@ export default function LandingPage() {
       {/* Content */}
       <div className="relative z-10 min-h-screen flex flex-col">
         {/* Navigation Bar - Fixed with Glass Effect */}
-        <header className="fixed top-0 left-0 right-0 z-50 px-4 md:px-8 py-4" role="banner">
+        <header className="fixed top-0 left-0 right-0 z-50 px-6 md:px-8 py-4" role="banner">
           <nav className="max-w-[95vw] xl:max-w-[1400px] mx-auto flex items-center justify-between bg-black/20 backdrop-blur-xl border border-white/10 rounded-2xl px-4 md:px-6 py-4 shadow-lg">
             {/* Logo */}
             <button 
@@ -251,7 +251,7 @@ export default function LandingPage() {
 
           {/* Mobile Menu */}
           {mobileMenuOpen && (
-            <div className="md:hidden mt-2 mx-4 bg-black/20 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-lg">
+            <div className="md:hidden mt-2 mx-6 bg-black/20 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-lg">
               <div className="flex flex-col gap-4">
                 <a 
                   href="#customers" 
@@ -289,12 +289,12 @@ export default function LandingPage() {
         </header>
 
         {/* Hero Section */}
-        <main className="flex-1 flex items-center justify-center px-4 md:px-12 py-12 md:py-24 pt-32 md:pt-48" role="main">
+        <main className="flex-1 flex items-center justify-center px-6 md:px-12 py-12 md:py-24 pt-32 md:pt-48" role="main">
           <div className="max-w-7xl mx-auto w-full">
             <div className="flex flex-col lg:flex-row gap-12 md:gap-28 items-center">
               {/* Left Column - Title, Subtitle */}
-              <div className="text-left w-full lg:w-[55%]">
-                <h1 className="text-2xl md:text-4xl lg:text-5xl font-bold text-white mb-4 md:mb-6 leading-tight mt-8 md:mt-16">
+              <div className="text-center md:text-left w-full lg:w-[55%]">
+                <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 md:mb-6 leading-tight mt-8 md:mt-16">
                   Smarter property investing insights, <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">instantly</span>.
                 </h1>
                 <p className="text-base md:text-xl text-gray-300 mb-6 md:mb-8">
@@ -305,7 +305,7 @@ export default function LandingPage() {
                   href="https://github.com/dvdciri/appraisor" 
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-black/20 backdrop-blur-xl border border-white/10 rounded-full text-white hover:text-purple-300 hover:border-purple-400/30 hover:bg-black/30 transition-all duration-200 shadow-lg text-sm"
+                  className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-black/20 backdrop-blur-xl border border-white/10 rounded-full text-white hover:text-purple-300 hover:border-purple-400/30 hover:bg-black/30 transition-all duration-200 shadow-lg text-sm mx-auto md:mx-0"
                   aria-label="View on GitHub - Open Source"
                 >
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -317,101 +317,99 @@ export default function LandingPage() {
 
               {/* Right Column - Form */}
               <div className="text-center w-full lg:w-[45%] mt-8 md:mt-16">
-                {/* Coming Soon Title */}
-                <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
-                Coming soon
-                </h2>
-                
-                {/* Free Credits Message */}
-                <p className="text-base text-white mb-4">
-                  Join the waiting list to get <span className="font-bold">30 free credits</span> — unlock AI valuations, comparables, and refurb cost estimates.
-                </p>
-                
-                {/* Success Message - Above Badge */}
-                {message && message.type === 'success' && (
-                  <div className="mb-3 p-3 rounded-lg bg-purple-500/20 border border-purple-400/30 text-purple-200 text-sm">
-                    {message.text}
-                  </div>
-                )}
-                
-                {/* Subscriber Counter */}
-                <div className="mb-4 min-h-[40px] flex items-center justify-center">
-                  {!loadingCount && subscriberCount ? (
-                    <div className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500/20 to-red-500/20 backdrop-blur-sm border border-orange-400/30 rounded-full px-3 py-1.5">
-                      <span className="text-orange-300 text-sm font-medium">
-                        🔥 {subscriberCount.subscriber_count}/{subscriberCount.max_free_spots} free credit spots taken
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500/10 to-red-500/10 backdrop-blur-sm border border-orange-400/20 rounded-full px-3 py-1.5">
-                      <div className="w-3 h-3 bg-orange-400/30 rounded-full animate-pulse"></div>
-                      <div className="w-16 h-3 bg-orange-400/30 rounded animate-pulse"></div>
+                {/* Subtle Box Container */}
+                <div className="bg-black/10 backdrop-blur-sm border border-white/10 rounded-2xl p-6 md:p-8">
+                  {/* Free Credits Message */}
+                  <p className="text-base text-white mb-4">
+                    Join the waiting list to get <span className="font-bold">30 free credits</span> — unlock AI valuations, comparables, and refurb cost estimates.
+                  </p>
+                  
+                  {/* Success Message - Above Badge */}
+                  {message && message.type === 'success' && (
+                    <div className="mb-3 p-3 rounded-lg bg-purple-500/20 border border-purple-400/30 text-purple-200 text-sm">
+                      {message.text}
                     </div>
                   )}
-                  {!loadingCount && subscriberCount && subscriberCount.remaining_spots === 0 && (
-                    <p className="text-orange-300 text-xs ml-3 font-medium">
-                      All free spots claimed! You can still join the waitlist to get early access.
-                    </p>
+                  
+                  {/* Subscriber Counter */}
+                  <div className="mb-4 min-h-[40px] flex items-center justify-center">
+                    {!loadingCount && subscriberCount ? (
+                      <div className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500/20 to-red-500/20 backdrop-blur-sm border border-orange-400/30 rounded-full px-3 py-1.5">
+                        <span className="text-orange-300 text-sm font-medium">
+                          🔥 {subscriberCount.subscriber_count}/{subscriberCount.max_free_spots} free credit spots taken
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500/10 to-red-500/10 backdrop-blur-sm border border-orange-400/20 rounded-full px-3 py-1.5">
+                        <div className="w-3 h-3 bg-orange-400/30 rounded-full animate-pulse"></div>
+                        <div className="w-16 h-3 bg-orange-400/30 rounded animate-pulse"></div>
+                      </div>
+                    )}
+                    {!loadingCount && subscriberCount && subscriberCount.remaining_spots === 0 && (
+                      <p className="text-orange-300 text-xs mt-2 font-medium text-center">
+                        All free spots claimed! You can still join the waitlist to get early access.
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Email Form - Hidden on Success */}
+                  {(!message || message.type !== 'success') && (
+                    <>
+                      <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2 mb-3 justify-center relative items-center" aria-label="Sign up for early access">
+                        <label htmlFor="email-input" className="sr-only">Email address</label>
+                        {showEmailTooltip && (
+                          <div className="absolute top-full mt-2 left-1/2 transform -translate-x-1/2 bg-purple-500 text-white text-xs px-3 py-2 rounded-lg shadow-lg whitespace-nowrap z-10 transition-opacity duration-300">
+                            Enter email to get free credits
+                            <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-full">
+                              <div className="w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-purple-500"></div>
+                            </div>
+                          </div>
+                        )}
+                        <input
+                          ref={emailInputRef}
+                          id="email-input"
+                          type="email"
+                          value={email}
+                          onChange={(e) => {
+                            setEmail(e.target.value)
+                            if (showEmailTooltip) {
+                              setShowEmailTooltip(false)
+                            }
+                          }}
+                          placeholder="Enter your email address"
+                          className="flex-1 px-3 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent text-sm w-full sm:max-w-xs"
+                          disabled={loading}
+                          required
+                          aria-describedby="email-help"
+                        />
+                        <button
+                          type="submit"
+                          disabled={loading}
+                          className="px-6 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap text-sm"
+                          aria-label={loading ? 'Signing up, please wait' : 'Reserve my spot'}
+                        >
+                          {loading ? 'Signing Up...' : 'Reserve my spot'}
+                        </button>
+                      </form>
+                      <p id="email-help" className="sr-only">Enter your email address to receive free credits when we launch</p>
+                      <p className="text-gray-400 text-xs mt-2 text-center">No spam, unsubscribe anytime.</p>
+                    </>
+                  )}
+
+                  {/* Error Message Display - Below Badge */}
+                  {message && message.type === 'error' && (
+                    <div className="mt-3 p-2 rounded-lg text-xs bg-red-500/20 border border-red-400/30 text-red-300">
+                      {message.text}
+                    </div>
                   )}
                 </div>
-
-                {/* Email Form - Hidden on Success */}
-                {(!message || message.type !== 'success') && (
-                  <>
-                    <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2 mb-3 justify-center relative" aria-label="Sign up for early access">
-                      <label htmlFor="email-input" className="sr-only">Email address</label>
-                      {showEmailTooltip && (
-                        <div className="absolute top-full mt-2 left-1/2 transform -translate-x-1/2 bg-purple-500 text-white text-xs px-3 py-2 rounded-lg shadow-lg whitespace-nowrap z-10 transition-opacity duration-300">
-                          Enter email to get free credits
-                          <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-full">
-                            <div className="w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-purple-500"></div>
-                          </div>
-                        </div>
-                      )}
-                      <input
-                        ref={emailInputRef}
-                        id="email-input"
-                        type="email"
-                        value={email}
-                        onChange={(e) => {
-                          setEmail(e.target.value)
-                          if (showEmailTooltip) {
-                            setShowEmailTooltip(false)
-                          }
-                        }}
-                        placeholder="Enter your email address"
-                        className="flex-1 px-3 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent text-sm max-w-xs"
-                        disabled={loading}
-                        required
-                        aria-describedby="email-help"
-                      />
-                      <button
-                        type="submit"
-                        disabled={loading}
-                        className="px-6 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap text-sm"
-                        aria-label={loading ? 'Signing up, please wait' : 'Reserve my spot'}
-                      >
-                        {loading ? 'Signing Up...' : 'Reserve my spot'}
-                      </button>
-                    </form>
-                    <p id="email-help" className="sr-only">Enter your email address to receive free credits when we launch</p>
-                    <p className="text-gray-400 text-xs mt-2 text-center">No spam, unsubscribe anytime.</p>
-                  </>
-                )}
-
-                {/* Error Message Display - Below Badge */}
-                {message && message.type === 'error' && (
-                  <div className="mt-3 p-2 rounded-lg text-xs bg-red-500/20 border border-red-400/30 text-red-300">
-                    {message.text}
-                  </div>
-                )}
               </div>
             </div>
           </div>
         </main>
 
         {/* Feature Cards Section */}
-        <section className="px-4 md:px-8 pb-12 md:pb-16 mt-12 md:mt-24" aria-labelledby="features-heading">
+        <section className="px-6 md:px-8 pb-12 md:pb-16 mt-6 md:mt-12" aria-labelledby="features-heading">
           <div className="max-w-7xl mx-auto">
             <h2 
               ref={featuresHeadingRef}
@@ -428,7 +426,7 @@ export default function LandingPage() {
               {/* Card 1: 45+ Data Points */}
               <div className={`bg-black/20 backdrop-blur-xl border border-gray-500/30 rounded-3xl p-6 hover:bg-black/30 transition-all duration-700 ease-out transform hover:scale-105 h-auto ${
                 heroCardsVisible 
-                  ? 'opacity-100 -translate-y-4 scale-100' 
+                  ? 'opacity-100 translate-y-0 md:-translate-y-4 scale-100' 
                   : 'opacity-0 translate-y-8 scale-95'
               }`} style={{ transitionDelay: '0ms' }}>
                 <h3 className="text-lg font-bold text-white mb-2">45+ data points</h3>
@@ -449,7 +447,7 @@ export default function LandingPage() {
               {/* Card 2: Auto comparables & valuation */}
               <div className={`bg-black/20 backdrop-blur-xl border border-gray-500/30 rounded-3xl p-6 hover:bg-black/30 transition-all duration-700 ease-out transform hover:scale-105 h-auto ${
                 heroCardsVisible 
-                  ? 'opacity-100 translate-y-8 scale-100' 
+                  ? 'opacity-100 translate-y-0 md:translate-y-8 scale-100' 
                   : 'opacity-0 translate-y-8 scale-95'
               }`} style={{ transitionDelay: '200ms' }}>
                 <h3 className="text-lg font-bold text-white mb-2">Auto comparables & valuation</h3>
@@ -470,63 +468,20 @@ export default function LandingPage() {
               {/* Card 3: AI refurbishment estimator */}
               <div className={`bg-black/20 backdrop-blur-xl border border-gray-500/30 rounded-3xl p-6 hover:bg-black/30 transition-all duration-700 ease-out transform hover:scale-105 h-auto ${
                 heroCardsVisible 
-                  ? 'opacity-100 translate-y-4 scale-100' 
+                  ? 'opacity-100 translate-y-0 md:translate-y-4 scale-100' 
                   : 'opacity-0 translate-y-8 scale-95'
               }`} style={{ transitionDelay: '400ms' }}>
                 <h3 className="text-lg font-bold text-white mb-2">AI refurbishment estimator</h3>
                 <p className="text-sm text-gray-300 mb-4">Upload property photos and get AI-generated schedule of works with cost breakdowns.</p>
                 <div className="mb-4">
-                  <div className="w-full flex flex-col justify-center">
-                    {/* Schedule of Work List */}
-                    <div className="space-y-2">
-                      <div className="bg-white/10 rounded p-2 flex justify-between items-center">
-                        <div className="flex items-center gap-2">
-                          <div className="text-xs">🔧</div>
-                          <div className="text-xs text-gray-300">Replace boiler</div>
-                        </div>
-                        <div className="text-xs text-white font-medium">£2,500</div>
-                      </div>
-                      
-                      <div className="bg-white/10 rounded p-2 flex justify-between items-center">
-                        <div className="flex items-center gap-2">
-                          <div className="text-xs">🪟</div>
-                          <div className="text-xs text-gray-300">New windows</div>
-                        </div>
-                        <div className="text-xs text-white font-medium">£4,200</div>
-                      </div>
-                      
-                      <div className="bg-white/10 rounded p-2 flex justify-between items-center">
-                        <div className="flex items-center gap-2">
-                          <div className="text-xs">🎨</div>
-                          <div className="text-xs text-gray-300">Paint & decorate</div>
-                        </div>
-                        <div className="text-xs text-white font-medium">£1,800</div>
-                      </div>
-                      
-                      <div className="bg-white/10 rounded p-2 flex justify-between items-center">
-                        <div className="flex items-center gap-2">
-                          <div className="text-xs">⚡</div>
-                          <div className="text-xs text-gray-300">Rewire electrics</div>
-                        </div>
-                        <div className="text-xs text-white font-medium">£3,100</div>
-                      </div>
-                      
-                      <div className="bg-white/10 rounded p-2 flex justify-between items-center">
-                        <div className="flex items-center gap-2">
-                          <div className="text-xs">🚿</div>
-                          <div className="text-xs text-gray-300">Bathroom refit</div>
-                        </div>
-                        <div className="text-xs text-white font-medium">£5,500</div>
-                      </div>
-                    </div>
-                    
-                    {/* Total */}
-                    <div className="mt-3 pt-2 border-t border-gray-500/30">
-                      <div className="flex justify-between items-center">
-                        <div className="text-xs text-purple-300 font-medium">Total Estimate</div>
-                        <div className="text-sm text-white font-bold">£17,100</div>
-                      </div>
-                    </div>
+                  <div className="w-full flex flex-col items-center justify-center">
+                    <Image 
+                      src="/refurb.png" 
+                      alt="AI Refurbishment Quote Dashboard" 
+                      width={600} 
+                      height={400} 
+                      className="w-full h-auto rounded-lg object-contain"
+                    />
                   </div>
                 </div>
               </div>
@@ -534,47 +489,20 @@ export default function LandingPage() {
               {/* Card 4: Multi-exit calculators with AI assistant */}
               <div className={`bg-black/20 backdrop-blur-xl border border-gray-500/30 rounded-3xl p-6 hover:bg-black/30 transition-all duration-700 ease-out transform hover:scale-105 h-auto ${
                 heroCardsVisible 
-                  ? 'opacity-100 -translate-y-4 scale-100' 
+                  ? 'opacity-100 translate-y-0 md:-translate-y-4 scale-100' 
                   : 'opacity-0 translate-y-8 scale-95'
               }`} style={{ transitionDelay: '600ms' }}>
                 <h3 className="text-lg font-bold text-white mb-2">Multi-exit calculators with AI assistant</h3>
                 <p className="text-sm text-gray-300 mb-4">Run scenarios for multiple exit strategies with AI-driven guidance and ROI projections.</p>
                 <div className="mb-4">
-                  <div className="w-full flex flex-col justify-center">
-                    {/* Exit Strategy Options */}
-                    <div className="space-y-2">
-                      <div className="bg-white/10 rounded p-2 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="text-xs">🏠</div>
-                          <div className="text-xs text-gray-300">BTL</div>
-                        </div>
-                        <div className="text-xs text-white font-medium">ROI: 8.5%</div>
-                      </div>
-                      
-                      <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded p-2 flex items-center justify-between border border-purple-400/30">
-                        <div className="flex items-center gap-2">
-                          <div className="text-xs">🔄</div>
-                          <div className="text-xs text-white font-medium">Flip</div>
-                        </div>
-                        <div className="text-xs text-white font-bold">ROI: 12.3%</div>
-                      </div>
-                      
-                      <div className="bg-white/10 rounded p-2 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="text-xs">🏗️</div>
-                          <div className="text-xs text-gray-300">BRRR</div>
-                        </div>
-                        <div className="text-xs text-white font-medium">ROI: 15.2%</div>
-                      </div>
-                    </div>
-                    
-                    {/* AI Recommendation */}
-                    <div className="mt-3 pt-2 border-t border-gray-500/30">
-                      <div className="flex justify-between items-center">
-                        <div className="text-xs text-purple-300 font-medium">AI Recommendation</div>
-                        <div className="text-xs text-white font-bold">Flip</div>
-                      </div>
-                    </div>
+                  <div className="w-full flex flex-col items-center justify-center">
+                    <Image 
+                      src="/calculator.png" 
+                      alt="Investment Calculator Dashboard" 
+                      width={600} 
+                      height={400} 
+                      className="w-full h-auto rounded-lg object-contain"
+                    />
                   </div>
                 </div>
               </div>
@@ -604,7 +532,7 @@ export default function LandingPage() {
         </section>
 
         {/* Customers Section */}
-        <section id="customers" className="px-4 md:px-8 pb-12 md:pb-16 mt-16 md:mt-28 scroll-mt-24 md:scroll-mt-28" aria-labelledby="customers-heading">
+        <section id="customers" className="px-6 md:px-8 pb-12 md:pb-16 mt-16 md:mt-28 scroll-mt-24 md:scroll-mt-28" aria-labelledby="customers-heading">
           <div className="max-w-7xl mx-auto">
             <h2 
               ref={(el) => { sectionTitleRefs.current['customers'] = el }}
@@ -668,7 +596,7 @@ export default function LandingPage() {
         </section>
 
         {/* Why Appraisor Section */}
-        <section id="why-appraisor" className="px-4 md:px-8 pb-12 md:pb-16 mt-16 md:mt-28 scroll-mt-24 md:scroll-mt-28" aria-labelledby="why-appraisor-heading">
+        <section id="why-appraisor" className="px-6 md:px-8 pb-12 md:pb-16 mt-16 md:mt-28 scroll-mt-24 md:scroll-mt-28" aria-labelledby="why-appraisor-heading">
           <div className="max-w-7xl mx-auto">
             <h2 
               id="why-appraisor-heading" 
@@ -733,7 +661,7 @@ export default function LandingPage() {
           id="pricing"
           ref={pricingRef}
           data-pricing-section
-          className={`px-4 md:px-8 pb-12 md:pb-16 mt-16 md:mt-28 scroll-mt-24 md:scroll-mt-28 transition-all duration-700 ${
+          className={`px-6 md:px-8 pb-12 md:pb-16 mt-16 md:mt-28 scroll-mt-24 md:scroll-mt-28 transition-all duration-700 ${
             isPricingVisible 
               ? 'opacity-100 translate-y-0' 
               : 'opacity-0 translate-y-8'
@@ -797,7 +725,7 @@ export default function LandingPage() {
         </section>
 
         {/* Footer */}
-        <footer className="px-4 md:px-8 py-6 md:py-8 mt-6 md:mt-8 text-center" role="contentinfo">
+        <footer className="px-6 md:px-8 py-6 md:py-8 mt-6 md:mt-8 text-center" role="contentinfo">
           <p className="text-gray-400 text-base mb-8">
             Built by Property Investors for Property Investors ❤️
           </p>
