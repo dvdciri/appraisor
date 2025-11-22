@@ -186,7 +186,7 @@ export default function DashboardV2Page() {
                
                 {/* Tab Content Area */}
                 <div className="flex-1 overflow-hidden bg-black/20">
-                  <TabContent propertyUPRN={activeTab?.propertyUPRN} />
+                  <TabContent key={activeTabId} propertyUPRN={activeTab?.propertyUPRN} />
                 </div>
               </div>
             </div>
