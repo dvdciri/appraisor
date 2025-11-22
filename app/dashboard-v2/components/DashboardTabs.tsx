@@ -111,7 +111,7 @@ export default function DashboardTabs({
               ref={isActive ? activeTabRef : null}
               onClick={() => onTabClick(tab.id)}
               className={`
-                group relative flex items-center gap-2 pl-4 pr-2 h-10 cursor-pointer min-w-[120px] flex-shrink-0
+                group relative flex items-center gap-2 pl-4 pr-2 h-10 cursor-pointer min-w-[120px] max-w-[200px] flex-shrink-0
                 border-l border-r border-t border-gray-500/30
                 transition-all duration-200
                 ${
@@ -127,9 +127,10 @@ export default function DashboardTabs({
               {/* Tab title */}
               <span
                 className={`
-                  text-sm truncate flex-1
+                  text-sm truncate flex-1 min-w-0
                   ${isActive ? 'text-white font-medium' : 'text-gray-500 group-hover:text-gray-400'}
                 `}
+                title={tab.title}
               >
                 {tab.title}
               </span>

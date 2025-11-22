@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { createPortal } from 'react-dom'
 import StreetViewImage from '../../components/StreetViewImage'
+import { extractUPRN, saveCalculatorData, type CalculatorData } from '../../../lib/persistence'
 
 interface Address {
   id: string
@@ -41,7 +42,11 @@ const isValidUKPostcode = (postcode: string): boolean => {
   return ukPostcodePattern.test(cleaned) && cleaned.length >= 5 && cleaned.length <= 7
 }
 
-export default function PropertySearch() {
+interface PropertySearchProps {
+  onPropertySelected?: (uprn: string, address: string) => void
+}
+
+export default function PropertySearch({ onPropertySelected }: PropertySearchProps) {
   const [postcode, setPostcode] = useState('')
   const [addresses, setAddresses] = useState<Address[]>([])
   const [selectedAddress, setSelectedAddress] = useState('')
@@ -114,8 +119,143 @@ export default function PropertySearch() {
   const handleAddressSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const addressId = e.target.value
     setSelectedAddress(addressId)
-    // For now, do nothing when address is selected
-    // This will be implemented later
+  }
+
+  const saveToRecentAnalyses = async (data: any) => {
+    // Extract UPRN from property data
+    const uprn = extractUPRN(data)
+    if (!uprn) {
+      console.error('Failed to extract UPRN from property data')
+      throw new Error('Property data missing UPRN')
+    }
+
+    // Create calculator data with default values
+    const calculatorData: CalculatorData = {
+      notes: '',
+      purchaseType: 'mortgage',
+      includeFeesInLoan: false,
+      bridgingDetails: {
+        loanType: 'serviced',
+        duration: '12',
+        grossLoanPercent: '70',
+        monthlyInterest: '0.75',
+        applicationFee: '1500'
+      },
+      exitStrategy: null,
+      refinanceDetails: {
+        expectedGDV: '0',
+        newLoanLTV: '75',
+        interestRate: '5.5',
+        brokerFees: '0',
+        legalFees: '0'
+      },
+      saleDetails: {
+        expectedSalePrice: '0',
+        agencyFeePercent: '1.5',
+        legalFees: '0'
+      },
+      refurbItems: [],
+      fundingSources: [],
+      initialCosts: {
+        refurbRepair: '0',
+        legal: '0',
+        stampDutyPercent: '0',
+        ila: '0',
+        brokerFees: '0',
+        auctionFees: '0',
+        findersFee: '0'
+      },
+      purchaseFinance: {
+        purchasePrice: '0',
+        deposit: '0',
+        ltv: '75',
+        loanAmount: '0',
+        productFee: '0',
+        interestRate: '5.5'
+      },
+      monthlyIncome: {
+        rent1: '0',
+        rent2: '0',
+        rent3: '0',
+        rent4: '0',
+        rent5: '0'
+      },
+      monthlyExpenses: {
+        serviceCharge: '0',
+        groundRent: '0',
+        maintenancePercent: '10',
+        managementPercent: '10',
+        insurance: '0',
+        mortgagePayment: '0'
+      },
+      propertyValue: '0'
+    }
+
+    // Save calculator data
+    await saveCalculatorData(uprn, calculatorData)
+    
+    return uprn
+  }
+
+  const handlePropertySearch = async (address: string, postcode: string) => {
+    setLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch('/api/property/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ address, postcode }),
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        setError(errorData.error || 'Failed to find property. Please check the address and postcode and try again.')
+        return
+      }
+      
+      const data = await response.json()
+      console.log('Property data received:', data)
+      
+      // Check if this was cached data
+      const wasCached = data._cached
+      console.log('Data was cached:', wasCached)
+      
+      // Only save to recent analyses if this was fresh data (not cached)
+      if (!wasCached) {
+        console.log('Saving fresh data to recent analyses...')
+        await saveToRecentAnalyses(data)
+      } else {
+        console.log('Skipping save to recent analyses - using cached data')
+      }
+      
+      // Extract UPRN and address
+      const uprn = extractUPRN(data)
+      if (!uprn) {
+        console.error('Failed to extract UPRN from property data')
+        setError('Failed to process property data. Please try again.')
+        return
+      }
+
+      // Extract house_number and street from simplified_format for tab title
+      const simplifiedFormat = data?.data?.attributes?.address?.simplified_format
+      const houseNumber = simplifiedFormat?.house_number || ''
+      const street = simplifiedFormat?.street || ''
+      const tabTitle = houseNumber && street ? `${houseNumber} ${street}` : address
+      
+      // Call the callback with UPRN and formatted title
+      if (onPropertySelected) {
+        onPropertySelected(uprn, tabTitle)
+      }
+      
+    } catch (error) {
+      console.error('Error analyzing property:', error)
+      setError('Failed to analyze property. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -127,12 +267,10 @@ export default function PropertySearch() {
     setHouseNumber(e.target.value)
   }
 
-  const handleHouseNumberSubmit = (e: React.FormEvent) => {
+  const handleHouseNumberSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (houseNumber.trim() && postcode.trim()) {
-      // For now, do nothing when house number is submitted
-      // This will be implemented later
-      console.log('House number submit:', { address: houseNumber, postcode: postcode })
+      await handlePropertySearch(houseNumber.trim(), postcode.trim())
     }
   }
 
@@ -275,10 +413,11 @@ export default function PropertySearch() {
             </div>
             <button
               type="button"
-              onClick={() => {
-                // For now, do nothing when Search Property is clicked
-                // This will be implemented later
-                console.log('Search Property clicked with address:', selectedAddress)
+              onClick={async () => {
+                const selectedAddr = addresses.find(addr => addr.id === selectedAddress)
+                if (selectedAddr) {
+                  await handlePropertySearch(selectedAddr.full_address, selectedAddr.postcode)
+                }
               }}
               disabled={loading || !selectedAddress}
               className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-500 hover:to-pink-500 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
@@ -327,6 +466,30 @@ export default function PropertySearch() {
             {displayedSearches.map((search) => (
               <div
                 key={search.uprn}
+                onClick={async () => {
+                  // For recent searches, property is already in database - fetch to get simplified format
+                  if (onPropertySelected) {
+                    try {
+                      const response = await fetch(`/api/properties/${encodeURIComponent(search.uprn)}`)
+                      if (response.ok) {
+                        const data = await response.json()
+                        // Extract house_number and street from simplified_format
+                        const simplifiedFormat = data?.data?.data?.attributes?.address?.simplified_format
+                        const houseNumber = simplifiedFormat?.house_number || ''
+                        const street = simplifiedFormat?.street || ''
+                        const tabTitle = houseNumber && street ? `${houseNumber} ${street}` : search.address
+                        onPropertySelected(search.uprn, tabTitle)
+                      } else {
+                        // Fallback to address if fetch fails
+                        onPropertySelected(search.uprn, search.address)
+                      }
+                    } catch (error) {
+                      console.error('Error fetching property data for recent search:', error)
+                      // Fallback to address if fetch fails
+                      onPropertySelected(search.uprn, search.address)
+                    }
+                  }
+                }}
                 className="aspect-square rounded-lg bg-white/10 backdrop-blur-sm border border-white/20 overflow-hidden hover:border-purple-400/50 transition-all duration-200 cursor-pointer group"
               >
                 <div className="relative w-full h-full flex flex-col">
@@ -427,6 +590,32 @@ export default function PropertySearch() {
                   {filteredSearches.map((search) => (
                     <div
                       key={search.uprn}
+                      onClick={async () => {
+                        // For recent searches, property is already in database - fetch to get simplified format
+                        if (onPropertySelected) {
+                          try {
+                            const response = await fetch(`/api/properties/${encodeURIComponent(search.uprn)}`)
+                            if (response.ok) {
+                              const data = await response.json()
+                              // Extract house_number and street from simplified_format
+                              const simplifiedFormat = data?.data?.data?.attributes?.address?.simplified_format
+                              const houseNumber = simplifiedFormat?.house_number || ''
+                              const street = simplifiedFormat?.street || ''
+                              const tabTitle = houseNumber && street ? `${houseNumber} ${street}` : search.address
+                              onPropertySelected(search.uprn, tabTitle)
+                            } else {
+                              // Fallback to address if fetch fails
+                              onPropertySelected(search.uprn, search.address)
+                            }
+                          } catch (error) {
+                            console.error('Error fetching property data for recent search:', error)
+                            // Fallback to address if fetch fails
+                            onPropertySelected(search.uprn, search.address)
+                          }
+                        }
+                        setShowModal(false)
+                        setSearchFilter('')
+                      }}
                       className="aspect-square rounded-lg bg-white/10 backdrop-blur-sm border border-white/20 overflow-hidden hover:border-purple-400/50 transition-all duration-200 cursor-pointer group"
                     >
                       <div className="relative w-full h-full flex flex-col">

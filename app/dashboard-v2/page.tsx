@@ -18,6 +18,9 @@ export default function DashboardV2Page() {
   const [activeTabMeasurements, setActiveTabMeasurements] = useState<TabMeasurements | null>(null)
   const [isLoadingTabs, setIsLoadingTabs] = useState(true)
   const hasLoadedTabs = useRef(false)
+  // Cache property data by UPRN to avoid refetching when switching tabs
+  const [propertyDataCache, setPropertyDataCache] = useState<Map<string, any>>(new Map())
+  const fetchingUPRNs = useRef<Set<string>>(new Set())
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -81,6 +84,56 @@ export default function DashboardV2Page() {
     return () => clearTimeout(timeoutId)
   }, [tabs, activeTabId, session, status])
 
+  // Get the active tab (needed for the useEffect below)
+  const activeTab = tabs.find(tab => tab.id === activeTabId) || tabs[0]
+
+  // Fetch property data for active tab if not in cache
+  useEffect(() => {
+    const uprn = activeTab?.propertyUPRN
+    if (!uprn) return
+
+    // Check if data is already in cache or currently being fetched
+    const cacheHasData = propertyDataCache.has(uprn)
+    const isFetching = fetchingUPRNs.current.has(uprn)
+    
+    if (cacheHasData || isFetching) {
+      return
+    }
+
+    // Mark as fetching
+    fetchingUPRNs.current.add(uprn)
+
+    // Fetch property data from database
+    const fetchPropertyData = async () => {
+      try {
+        const response = await fetch(`/api/properties/${encodeURIComponent(uprn)}`)
+        if (response.ok) {
+          const data = await response.json()
+          // Cache the property data
+          setPropertyDataCache(prev => {
+            const newCache = new Map(prev)
+            newCache.set(uprn, data)
+            return newCache
+          })
+        }
+      } catch (error) {
+        console.error('Error fetching property data:', error)
+      } finally {
+        // Remove from fetching set
+        fetchingUPRNs.current.delete(uprn)
+      }
+    }
+
+    fetchPropertyData()
+    // Only depend on propertyUPRN - cache check happens inside effect
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab?.propertyUPRN])
+
+  // Get cached property data for active tab
+  const activeTabPropertyData = activeTab?.propertyUPRN 
+    ? propertyDataCache.get(activeTab.propertyUPRN) 
+    : null
+
   // Show loading while checking authentication or loading tabs
   if (status === 'loading' || isLoadingTabs) {
     return (
@@ -139,8 +192,17 @@ export default function DashboardV2Page() {
     setActiveTabId(tabId)
   }
 
-  // Get the active tab
-  const activeTab = tabs.find(tab => tab.id === activeTabId) || tabs[0]
+  // Handle property selection
+  const handlePropertySelected = (uprn: string, address: string) => {
+    // Update the active tab with the property UPRN and set title to address only
+    setTabs(prevTabs => 
+      prevTabs.map(tab => 
+        tab.id === activeTabId 
+          ? { ...tab, propertyUPRN: uprn, title: address }
+          : tab
+      )
+    )
+  }
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gray-900">
@@ -164,7 +226,7 @@ export default function DashboardV2Page() {
         {/* Main Layout: Sidebar (25%) + Tabbed Area (75%) */}
         <div className="flex flex-1 min-h-0 gap-6 px-6 pb-6">
           {/* Left Sidebar - 25% */}
-          <Sidebar />
+          <Sidebar propertyUPRN={activeTab?.propertyUPRN} propertyData={activeTabPropertyData} />
 
           {/* Right Tabbed Area - 75% */}
           <main className="flex-1 flex flex-col min-h-0 min-w-0">
@@ -186,7 +248,12 @@ export default function DashboardV2Page() {
                
                 {/* Tab Content Area */}
                 <div className="flex-1 overflow-hidden bg-black/20">
-                  <TabContent key={activeTabId} propertyUPRN={activeTab?.propertyUPRN} />
+                  <TabContent 
+                    key={activeTabId} 
+                    propertyUPRN={activeTab?.propertyUPRN} 
+                    propertyData={activeTabPropertyData}
+                    onPropertySelected={handlePropertySelected}
+                  />
                 </div>
               </div>
             </div>

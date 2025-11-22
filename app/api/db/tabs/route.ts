@@ -52,14 +52,14 @@ export async function GET(request: NextRequest) {
     }
 
     // Convert database rows to tab format
-    const tabs = result.rows.map(row => ({
+    const tabs = result.rows.map((row: any) => ({
       id: row.tab_id,
       title: row.title,
       propertyUPRN: row.property_uprn || null
     }))
 
     // Find the active tab
-    const activeTab = result.rows.find(row => row.is_active)
+    const activeTab = result.rows.find((row: any) => row.is_active)
     const activeTabId = activeTab ? activeTab.tab_id : (tabs.length > 0 ? tabs[0].id : null)
 
     return NextResponse.json({
@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
         'SELECT tab_id FROM user_tabs WHERE user_id = $1',
         [userId]
       )
-      const existingTabIds = new Set(existingTabsResult.rows.map(row => row.tab_id))
+      const existingTabIds = new Set(existingTabsResult.rows.map((row: any) => row.tab_id))
       const newTabIds = new Set(tabs.map(tab => tab.id))
 
       // Delete tabs that are no longer in the array
@@ -175,13 +175,13 @@ export async function POST(request: NextRequest) {
         [userId]
       )
 
-      const updatedTabs = result.rows.map(row => ({
+      const updatedTabs = result.rows.map((row: any) => ({
         id: row.tab_id,
         title: row.title,
         propertyUPRN: row.property_uprn || null
       }))
 
-      const activeTab = result.rows.find(row => row.is_active)
+      const activeTab = result.rows.find((row: any) => row.is_active)
       const finalActiveTabId = activeTab ? activeTab.tab_id : (updatedTabs.length > 0 ? updatedTabs[0].id : null)
 
       return NextResponse.json({
