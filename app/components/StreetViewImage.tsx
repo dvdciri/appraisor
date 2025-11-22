@@ -28,7 +28,7 @@ export default function StreetViewImage({ latitude, longitude, address, classNam
   }
   
   // Google Street View Static API URL (matching PropertyDetails parameters)
-  const streetViewUrl = `https://maps.googleapis.com/maps/api/streetview?size=200x150&location=${latitude},${longitude}&fov=80&pitch=0&key=${apiKey}`
+  const streetViewUrl = `https://maps.googleapis.com/maps/api/streetview?size=300x250&location=${latitude},${longitude}&fov=80&pitch=0&key=${apiKey}`
 
   if (imageError) {
     return (
@@ -41,17 +41,21 @@ export default function StreetViewImage({ latitude, longitude, address, classNam
     )
   }
 
+  // Determine if we should use rounded corners (default true, unless className includes rounded-none)
+  const useRoundedCorners = !className.includes('rounded-none')
+  const imageRoundedClass = useRoundedCorners ? 'rounded-lg' : 'rounded-none'
+
   return (
     <div className={`relative ${className}`}>
       {imageLoading && (
-        <div className="absolute inset-0 bg-gray-700 rounded-lg flex items-center justify-center">
+        <div className={`absolute inset-0 bg-gray-700 ${imageRoundedClass} flex items-center justify-center`}>
           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
         </div>
       )}
       <img
         src={streetViewUrl}
         alt={`Street view of ${address}`}
-        className="w-full h-full object-cover rounded-lg"
+        className={`w-full h-full object-cover ${imageRoundedClass}`}
         onLoad={() => setImageLoading(false)}
         onError={(e) => {
           setImageError(true)

@@ -28,12 +28,14 @@ export async function GET(request: NextRequest) {
 
     const userId = userResult.rows[0].user_id
 
-    // Get user's search history with property details
+    // Get user's search history with property details including coordinates
     const searchHistoryResult = await query(`
       SELECT 
         ush.uprn,
         ush.searched_at,
-        p.data->'data'->'attributes'->'address'->'street_group_format'->>'address_lines' as address
+        p.data->'data'->'attributes'->'address'->'street_group_format'->>'address_lines' as address,
+        (p.data->'data'->'attributes'->'location'->'coordinates'->>'latitude')::float as latitude,
+        (p.data->'data'->'attributes'->'location'->'coordinates'->>'longitude')::float as longitude
       FROM user_search_history ush
       JOIN properties p ON ush.uprn = p.uprn
       WHERE ush.user_id = $1
@@ -44,7 +46,9 @@ export async function GET(request: NextRequest) {
     const searches = searchHistoryResult.rows.map((row: any) => ({
       uprn: row.uprn,
       address: row.address || 'Address not available',
-      searched_at: row.searched_at
+      searched_at: row.searched_at,
+      latitude: row.latitude,
+      longitude: row.longitude
     }))
 
     return NextResponse.json(searches)

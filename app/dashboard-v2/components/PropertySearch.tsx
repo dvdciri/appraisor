@@ -1,7 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
+import { createPortal } from 'react-dom'
+import StreetViewImage from '../../components/StreetViewImage'
 
 interface Address {
   id: string
@@ -16,6 +18,14 @@ interface Address {
   line_3?: string
   post_town: string
   county: string
+}
+
+interface RecentSearch {
+  uprn: string
+  address: string
+  searched_at: string
+  latitude?: number
+  longitude?: number
 }
 
 // UK postcode validation function
@@ -39,6 +49,16 @@ export default function PropertySearch() {
   const [error, setError] = useState<string | null>(null)
   const [houseNumber, setHouseNumber] = useState('')
   const [showHouseNumberField, setShowHouseNumberField] = useState(false)
+  const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([])
+  const [loadingRecentSearches, setLoadingRecentSearches] = useState(true)
+  const [showAllRecentSearches, setShowAllRecentSearches] = useState(false)
+  const [showModal, setShowModal] = useState(false)
+  const [searchFilter, setSearchFilter] = useState('')
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const handlePostcodeSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -116,22 +136,46 @@ export default function PropertySearch() {
     }
   }
 
+  // Fetch recent searches on mount
+  useEffect(() => {
+    const fetchRecentSearches = async () => {
+      try {
+        const response = await fetch('/api/user/search-history')
+        if (response.ok) {
+          const data = await response.json()
+          setRecentSearches(data)
+        }
+      } catch (error) {
+        console.error('Error fetching recent searches:', error)
+      } finally {
+        setLoadingRecentSearches(false)
+      }
+    }
+
+    fetchRecentSearches()
+  }, [])
+
+  // Show maximum 4 items (1 row) at all times
+  const itemsPerPage = 4
+  const displayedSearches = recentSearches.slice(0, itemsPerPage)
+  const hasMoreSearches = recentSearches.length > itemsPerPage
+
+  // Filter searches for modal
+  const filteredSearches = searchFilter.trim()
+    ? recentSearches.filter(search => 
+        search.address.toLowerCase().includes(searchFilter.toLowerCase())
+      )
+    : recentSearches
+
   return (
-    <div className="w-full max-w-md mx-auto mt-36">
-      <div className="text-center mb-8">
-        <div className="flex justify-center mb-4">
-          <Image
-            src="/search-icon.png"
-            alt="Search icon"
-            width={80}
-            height={80}
-            className="w-20 h-20"
-          />
-        </div>
-        <h2 className="text-2xl font-bold text-white mb-2">Search Any Property</h2>
-        <p className="text-gray-300 text-sm">Enter a postcode to get your property details</p>
-      </div>
-      <div className="space-y-4">
+    <div className="w-full max-w-7xl mx-auto mt-36 px-4">
+        <div className="max-w-md mx-auto">
+          <div className="text-center mb-8">
+            <div className="text-4xl mb-3">🔍</div>
+            <h2 className="text-2xl font-bold text-white mb-2">Analyze Your Next Property Investment</h2>
+            <p className="text-gray-300 text-sm">Enter a postcode to find a property</p>
+          </div>
+        <div className="space-y-4">
         <form onSubmit={handlePostcodeSubmit} className="space-y-4">
         <div className="relative">
           <input
@@ -250,7 +294,180 @@ export default function PropertySearch() {
             </button>
           </>
         )}
+        </div>
       </div>
+
+      {/* Recent Searches Grid */}
+      {loadingRecentSearches && (
+        <div className="mt-24 w-full max-w-4xl mx-auto">
+          <div className="h-7 bg-gray-700/30 rounded w-48 mb-4 animate-pulse mx-auto"></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+            {[...Array(4)].map((_, index) => (
+              <div
+                key={index}
+                className="aspect-square rounded-lg bg-white/10 backdrop-blur-sm border border-white/20 overflow-hidden"
+              >
+                <div className="relative w-full h-full flex flex-col">
+                  <div className="flex-1 bg-gray-700/30 animate-pulse"></div>
+                  <div className="p-2 bg-black/20">
+                    <div className="h-3 bg-gray-700/30 rounded mb-1 animate-pulse"></div>
+                    <div className="h-3 bg-gray-700/30 rounded w-3/4 animate-pulse"></div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!loadingRecentSearches && recentSearches.length > 0 && (
+        <div className="mt-24 w-full max-w-4xl mx-auto">
+          <h3 className="text-lg font-semibold text-white mb-4 text-center">Recent Analyses</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+            {displayedSearches.map((search) => (
+              <div
+                key={search.uprn}
+                className="aspect-square rounded-lg bg-white/10 backdrop-blur-sm border border-white/20 overflow-hidden hover:border-purple-400/50 transition-all duration-200 cursor-pointer group"
+              >
+                <div className="relative w-full h-full flex flex-col">
+                  {/* Street View Image */}
+                  {search.latitude && search.longitude ? (
+                    <div className="flex-1 overflow-hidden rounded-t-lg">
+                      <StreetViewImage
+                        latitude={search.latitude}
+                        longitude={search.longitude}
+                        address={search.address}
+                        className="w-full h-full rounded-none"
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex-1 bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center rounded-t-lg">
+                      <div className="w-12 h-12 rounded-lg bg-white/10 flex items-center justify-center">
+                        <svg className="w-6 h-6 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                        </svg>
+                      </div>
+                    </div>
+                  )}
+                  {/* Address and Date */}
+                  <div className="p-2 bg-black/20">
+                    <p className="text-white text-sm font-medium truncate group-hover:text-purple-300 transition-colors">
+                      {search.address}
+                    </p>
+                    <p className="text-gray-400 text-[10px] mt-1">
+                      {new Date(search.searched_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          {hasMoreSearches && (
+            <div className="mt-6 text-center">
+              <button
+                onClick={() => setShowModal(true)}
+                className="px-6 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-white text-sm font-medium transition-all duration-200"
+              >
+                See All
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Modal for All Recent Searches - Rendered at document body level */}
+      {mounted && showModal && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            onClick={() => {
+              setShowModal(false)
+              setSearchFilter('')
+            }}
+          ></div>
+          
+          {/* Modal Content */}
+          <div className="relative w-full max-w-6xl max-h-[90vh] bg-black/90 backdrop-blur-xl border border-gray-500/30 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-500/30">
+              <h2 className="text-2xl font-bold text-white">Recent Analyses</h2>
+              <button
+                onClick={() => {
+                  setShowModal(false)
+                  setSearchFilter('')
+                }}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Search Bar */}
+            <div className="p-6 border-b border-gray-500/30">
+              <input
+                type="text"
+                value={searchFilter}
+                onChange={(e) => setSearchFilter(e.target.value)}
+                placeholder="Search by address..."
+                className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Grid Content - Scrollable */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {filteredSearches.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-gray-400">No properties found matching your search.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+                  {filteredSearches.map((search) => (
+                    <div
+                      key={search.uprn}
+                      className="aspect-square rounded-lg bg-white/10 backdrop-blur-sm border border-white/20 overflow-hidden hover:border-purple-400/50 transition-all duration-200 cursor-pointer group"
+                    >
+                      <div className="relative w-full h-full flex flex-col">
+                        {/* Street View Image */}
+                        {search.latitude && search.longitude ? (
+                          <div className="flex-1 overflow-hidden rounded-t-lg">
+                            <StreetViewImage
+                              latitude={search.latitude}
+                              longitude={search.longitude}
+                              address={search.address}
+                              className="w-full h-full rounded-none"
+                            />
+                          </div>
+                        ) : (
+                          <div className="flex-1 bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center rounded-t-lg">
+                            <div className="w-12 h-12 rounded-lg bg-white/10 flex items-center justify-center">
+                              <svg className="w-6 h-6 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                              </svg>
+                            </div>
+                          </div>
+                        )}
+                        {/* Address and Date */}
+                        <div className="p-2 bg-black/20">
+                          <p className="text-white text-sm font-medium truncate group-hover:text-purple-300 transition-colors">
+                            {search.address}
+                          </p>
+                          <p className="text-gray-400 text-[10px] mt-1">
+                            {new Date(search.searched_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   )
 }
