@@ -91,6 +91,7 @@ export default function SearchPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [mapCenter, setMapCenter] = useState('53.4808,-2.2426') // Default to Manchester
+  const [postcodeSearchKey, setPostcodeSearchKey] = useState(0) // Key to reset PostcodeSearch component
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -256,6 +257,12 @@ export default function SearchPage() {
     setSuccessMessage(null)
 
     try {
+      // Get coordinates for the postcode to update map
+      const coordinates = await getCoordinatesFromPostcode(postcode)
+      if (coordinates) {
+        setMapCenter(coordinates)
+      }
+
       const response = await fetch('/api/property/search', {
         method: 'POST',
         headers: {
@@ -267,7 +274,13 @@ export default function SearchPage() {
       if (!response.ok) {
         const errorData = await response.json()
         setErrorMessage(errorData.error || 'Failed to find property. Please check the address and postcode and try again.')
-        setCurrentStep('address')
+        // If no addresses were found (manual submission), go back to postcode step
+        // Otherwise, go back to address step
+        const shouldGoToPostcode = addresses.length === 0
+        setCurrentStep(shouldGoToPostcode ? 'postcode' : 'address')
+        if (shouldGoToPostcode) {
+          setPostcodeSearchKey(prev => prev + 1) // Reset PostcodeSearch component state
+        }
         return
       }
       
@@ -293,13 +306,21 @@ export default function SearchPage() {
       } else {
         console.error('Failed to extract UPRN from property data')
         setErrorMessage('Failed to process property data. Please try again.')
-        setCurrentStep('address')
+        // If no addresses were found (manual submission), go back to postcode step
+        // Otherwise, go back to address step
+        const shouldGoToPostcode = addresses.length === 0
+        setCurrentStep(shouldGoToPostcode ? 'postcode' : 'address')
+        if (shouldGoToPostcode) {
+          setPostcodeSearchKey(prev => prev + 1) // Reset PostcodeSearch component state
+        }
       }
       
     } catch (error) {
       console.error('Error analyzing property:', error)
       setErrorMessage('Failed to analyze property. Please try again.')
-      setCurrentStep('address')
+      // If no addresses were found (manual submission), go back to postcode step
+      // Otherwise, go back to address step
+      setCurrentStep(addresses.length === 0 ? 'postcode' : 'address')
     } finally {
       setLoading(false)
     }
@@ -312,6 +333,7 @@ export default function SearchPage() {
     setSelectedPostcode('')
     setErrorMessage(null)
     setMapCenter('53.4808,-2.2426') // Reset to Manchester
+    setPostcodeSearchKey(prev => prev + 1) // Reset PostcodeSearch component state
   }
 
   const handleShowAllSearches = () => {
@@ -328,7 +350,9 @@ export default function SearchPage() {
         return (
           <div className="space-y-4">
             <PostcodeSearch
+              key={postcodeSearchKey}
               onPostcodeSubmit={handlePostcodeSubmit}
+              onManualSubmit={handleAddressSelect}
               loading={loading}
               error={errorMessage}
             />
